@@ -9,7 +9,6 @@ if (isset($_POST['add_item'])) {
     $cat = $_POST['category'];
     $stock = $_POST['stock'];
 
-    
     $image_name = "";
     if (!empty($_FILES['item_image']['name'])) {
         $image_name = time() . "_" . $_FILES['item_image']['name'];
@@ -25,8 +24,6 @@ if (isset($_POST['add_item'])) {
 
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
-    
-    
     $res = $conn->query("SELECT image_path FROM items WHERE id = $id");
     $img_data = $res->fetch_assoc();
     if($img_data['image_path']) {
@@ -50,7 +47,8 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
 <head>
     <meta charset="UTF-8">
     <title>Admin Dashboard | Restaurant Management</title>
-    <link href="https://cloudflare.com" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --primary: #2563eb; --danger: #ef4444; --bg: #f8fafc; --dark: #1e293b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; }
@@ -61,25 +59,19 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
         .sidebar a:hover { background: #334155; color: white; }
         .sidebar a.active { background: var(--primary); color: white; }
 
-        
         .main { margin-left: 260px; padding: 40px; width: 100%; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         
-       
         .revenue-card { background: white; padding: 20px; border-radius: 15px; border-left: 6px solid var(--primary); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 300px; }
         .revenue-card small { color: #64748b; font-weight: bold; }
         .revenue-card h2 { margin: 5px 0 0; font-size: 2rem; color: var(--dark); }
 
-      
         .grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; }
         .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
         
-    
         input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; }
         .btn-add { background: var(--primary); color: white; border: none; width: 100%; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        .btn-add:hover { background: #1d4ed8; }
-
-      
+        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { text-align: left; padding: 15px; background: #f1f5f9; color: #475569; font-size: 0.85rem; text-transform: uppercase; }
         td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
@@ -95,7 +87,9 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
         <h2><i class="fas fa-utensils"></i> RMS Admin</h2>
         <a href="admin.php" class="active"><i class="fas fa-th-large"></i> Dashboard</a>
         <a href="kitchen.php"><i class="fas fa-fire-burner"></i> Kitchen View</a>
-        <a href="index.php" target="_blank"><i class="fas fa-external-link-alt"></i> Customer View</a>
+        
+       
+        <a href="order_index.php" target="_blank"><i class="fas fa-external-link-alt"></i> Customer View</a>
     </div>
 
     <div class="main">
@@ -108,7 +102,7 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
         </div>
 
         <div class="grid">
-           
+            
             <div class="card">
                 <h3 style="margin-top:0;"><i class="fas fa-plus-circle"></i> Add New Item</h3>
                 <form method="POST" enctype="multipart/form-data">
@@ -129,7 +123,7 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
                 </form>
             </div>
 
-           
+            
             <div class="card" style="padding: 0; overflow: hidden;">
                 <table>
                     <thead>
