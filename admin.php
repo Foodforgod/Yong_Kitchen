@@ -8,7 +8,7 @@ if (isset($_POST['add_item'])) {
     $price = $_POST['price'];
     $cat = $_POST['category'];
     $stock = $_POST['stock'];
-    $image_url = $_POST['item_image_url']; 
+    $image_url = $_POST['item_image_url'];
 
     $sql = "INSERT INTO items (name, description, price, category, stock, image_path) 
             VALUES ('$name', '$desc', '$price', '$cat', '$stock', '$image_url')";
@@ -52,9 +52,7 @@ $revenue_res = $conn->query("SELECT SUM(total_price) as total FROM orders WHERE 
 $revenue = $revenue_res->fetch_assoc()['total'] ?? 0;
 
 $search = $_GET['search'] ?? '';
-$query = "SELECT * FROM items";
-if(!empty($search)) { $query .= " WHERE name LIKE '%$search%'"; }
-$query .= " ORDER BY id DESC";
+$query = "SELECT * FROM items" . (!empty($search) ? " WHERE name LIKE '%$search%'" : "") . " ORDER BY id DESC";
 $items = $conn->query($query);
 ?>
 
@@ -65,28 +63,38 @@ $items = $conn->query($query);
     <title>Admin Dashboard | RMS</title>
     <link rel="stylesheet" href="https://cloudflare.com">
     <style>
-        :root { --primary: #2563eb; --danger: #ef4444; --success: #10b981; --bg: #f8fafc; --dark: #1e293b; }
+        :root { --primary: #2563eb; --danger: #ef4444; --warning: #f59e0b; --success: #10b981; --bg: #f8fafc; --dark: #1e293b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; }
+        
         .sidebar { width: 260px; height: 100vh; background: var(--dark); color: white; position: fixed; padding: 20px; box-sizing: border-box; }
         .sidebar h2 { color: #38bdf8; font-size: 1.2rem; margin-bottom: 30px; }
         .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
         .sidebar a:hover, .sidebar a.active { background: #334155; color: white; }
         .sidebar a.active { background: var(--primary); }
+
         .main { margin-left: 260px; padding: 40px; width: calc(100% - 260px); }
         .revenue-card { background: white; padding: 20px; border-radius: 15px; border-left: 6px solid var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 300px; margin-bottom: 30px; }
+        
         .grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; }
         .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
         input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; }
         .btn { border: none; width: 100%; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; color: white; }
         .btn-blue { background: var(--primary); }
         .btn-green { background: var(--success); }
+        
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 15px; background: #f1f5f9; color: #475569; font-size: 0.8rem; text-transform: uppercase; }
         td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        
         .item-img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; }
+        
+       
         .stock-tag { padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
         .in-stock { background: #dcfce7; color: #166534; }
-        .out-stock { background: #fee2e2; color: #991b1b; }
+        .low-stock { background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; } 
+        .out-stock { background: #fee2e2; color: #991b1b; animation: blink 1.5s infinite; } 
+        @keyframes blink { 50% { opacity: 0.6; } }
     </style>
 </head>
 <body>
@@ -94,17 +102,19 @@ $items = $conn->query($query);
     <div class="sidebar">
         <h2><i class="fas fa-utensils"></i> RMS Admin</h2>
         <a href="admin.php" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="cashier.php"><i class="fas fa-cash-register"></i> Cashier Counter</a>
         <a href="kitchen.php"><i class="fas fa-fire-burner"></i> Kitchen</a>
         <a href="index.php" target="_blank"><i class="fas fa-eye"></i> Customer View</a>
     </div>
 
     <div class="main">
         <div class="revenue-card">
-            <small>TOTAL REVENUE</small>
-            <h2>$<?php echo number_format($revenue, 2); ?></h2>
+            <small style="font-weight:bold; color:#64748b;">TOTAL REVENUE</small>
+            <h2 style="margin:5px 0;">$<?php echo number_format($revenue, 2); ?></h2>
         </div>
 
         <div class="grid">
+            
             <div class="card">
                 <h3><i class="fas <?php echo $edit_item ? 'fa-edit' : 'fa-plus-circle'; ?>"></i> 
                 <?php echo $edit_item ? 'Edit Item' : 'Add New Item'; ?></h3>
@@ -123,23 +133,23 @@ $items = $conn->query($query);
                         <option value="Drinks" <?php echo ($edit_item && $edit_item['category']=='Drinks')?'selected':''; ?>>Drinks</option>
                     </select>
                     
-                    <input type="number" name="stock" placeholder="Stock" value="<?php echo $edit_item['stock'] ?? ''; ?>" required>
-                    
+                    <input type="number" name="stock" placeholder="Stock Quantity" value="<?php echo $edit_item['stock'] ?? ''; ?>" required>
                     <input type="text" name="item_image_url" placeholder="Image URL (https://...)" value="<?php echo $edit_item['image_path'] ?? ''; ?>">
                     
                     <?php if($edit_item): ?>
                         <button type="submit" name="update_item" class="btn btn-green">Update Item</button>
-                        <a href="admin.php" style="display:block; text-align:center; margin-top:10px; color:#64748b; text-decoration:none;">Cancel</a>
+                        <a href="admin.php" style="display:block; text-align:center; margin-top:10px; color:#64748b; text-decoration:none;">Cancel Edit</a>
                     <?php else: ?>
                         <button type="submit" name="add_item" class="btn btn-blue">Add to Menu</button>
                     <?php endif; ?>
                 </form>
             </div>
 
+           
             <div class="card" style="padding:0; overflow:hidden;">
                 <div style="padding: 20px; border-bottom: 1px solid #eee;">
                     <form method="GET">
-                        <input type="text" name="search" placeholder="Search menu..." value="<?php echo $search; ?>" style="width: 200px; margin:0;">
+                        <input type="text" name="search" placeholder="Search item..." value="<?php echo $search; ?>" style="width: 200px; margin:0;">
                         <button type="submit" class="btn btn-blue" style="width:auto; padding:10px 15px;">Search</button>
                     </form>
                 </div>
@@ -166,8 +176,21 @@ $items = $conn->query($query);
                             </td>
                             <td><strong><?php echo $row['name']; ?></strong><br><small><?php echo $row['category']; ?></small></td>
                             <td>
-                                <span class="stock-tag <?php echo ($row['stock'] <= 0) ? 'out-stock' : 'in-stock'; ?>">
-                                    <?php echo ($row['stock'] <= 0) ? 'RESTOCK' : $row['stock'].' units'; ?>
+                                <?php 
+                                   
+                                    $stock_class = 'in-stock';
+                                    $stock_text = $row['stock'] . ' units';
+                                    
+                                    if($row['stock'] <= 0) {
+                                        $stock_class = 'out-stock';
+                                        $stock_text = 'RESTOCK';
+                                    } elseif ($row['stock'] <= 5) {
+                                        $stock_class = 'low-stock';
+                                        $stock_text = 'LOW: ' . $row['stock'];
+                                    }
+                                ?>
+                                <span class="stock-tag <?php echo $stock_class; ?>">
+                                    <?php echo $stock_text; ?>
                                 </span>
                             </td>
                             <td><strong>$<?php echo number_format($row['price'], 2); ?></strong></td>
