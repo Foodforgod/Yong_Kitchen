@@ -1,7 +1,14 @@
+<<<<<<< HEAD
 DROP DATABASE IF EXISTS restaurant_db;
 
 
 CREATE DATABASE restaurant_db;
+=======
+DROP DATABASE IF EXISTS restaurants_db;
+
+
+CREATE DATABASE restaurants_db;
+>>>>>>> 92d048ecd14d6e8b2b7a0d0cf5103462c8ae04d6
 USE restaurant_db;
 
 
