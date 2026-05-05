@@ -161,7 +161,7 @@ $items = $conn->query("SELECT * FROM items WHERE stock > 0 ORDER BY name ASC");
                     PROCESS PAYMENT
                 </button>
             </form>
-            <a href="?clear=1" class="btn-clear">CLEAR ORDER</a>
+            <a href="?clear=1" class="btn-clear">CLEAR ORDERS</a>
         </div>
     </div>
 </body>
