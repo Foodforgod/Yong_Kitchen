@@ -28,7 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         echo "<h1>Order Success!</h1>";
         echo "<p>Order ID: #$order_id</p>";
-        echo "<a href='index.php'>Back to Menu</a>";
+        echo "<a href='order_index.php'>Back to Menu</a>";
     } else {
         echo "Error: " . $conn->error;
     }
