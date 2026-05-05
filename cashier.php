@@ -3,166 +3,97 @@ session_start();
 include 'db.php'; 
 
 
-if (isset($_POST['add_to_order'])) {
-    $id = $_POST['item_id'];
-    $name = $_POST['item_name'];
-    $price = $_POST['item_price'];
+if (isset($_POST['process_payment'])) {
+    $order_id = intval($_POST['order_id']);
+    $stmt = $conn->prepare("UPDATE orders SET status = 'completed' WHERE id = ? AND status = 'done'");
+    $stmt->bind_param("i", $order_id);
     
-    $found = false;
-    if (!isset($_SESSION['cashier_cart'])) { $_SESSION['cashier_cart'] = []; }
-    foreach ($_SESSION['cashier_cart'] as &$item) {
-        if ($item['id'] == $id) {
-            $item['qty']++;
-            $found = true;
-            break;
-        }
-    }
-    if (!$found) {
-        $_SESSION['cashier_cart'][] = ['id' => $id, 'name' => $name, 'price' => $price, 'qty' => 1];
+    if ($stmt->execute()) {
+        echo "<script>alert('Order #$order_id Paid!'); window.location='cashier.php';</script>";
     }
 }
 
 
-if (isset($_GET['clear'])) { 
-    unset($_SESSION['cashier_cart']); 
-    header("Location: cashier.php"); 
-    exit(); 
-}
-
-if (isset($_POST['checkout_order'])) {
-    $total = $_POST['grand_total'];
-  
-    $conn->query("INSERT INTO orders (table_number, total_price, status) VALUES ('Counter', '$total', 'completed')");
-    $order_id = $conn->insert_id;
-
-    if(isset($_SESSION['cashier_cart'])){
-        foreach ($_SESSION['cashier_cart'] as $item) {
-            $item_id = $item['id']; $qty = $item['qty'];
-            $conn->query("INSERT INTO order_items (order_id, item_id, quantity) VALUES ($order_id, $item_id, $qty)");
-            $conn->query("UPDATE items SET stock = stock - $qty WHERE id = $item_id");
-        }
-    }
-    unset($_SESSION['cashier_cart']);
-    echo "<script>alert('Checkout successful! Order ID: #$order_id'); window.location='cashier.php';</script>";
-}
-
-
-$items = $conn->query("SELECT * FROM items WHERE stock > 0 ORDER BY name ASC");
+$query = "SELECT o.*, GROUP_CONCAT(CONCAT(oi.quantity, 'x ', i.name) SEPARATOR ', ') as item_details 
+          FROM orders o 
+          JOIN order_items oi ON o.id = oi.order_id 
+          JOIN items i ON oi.item_id = i.id 
+          WHERE o.status = 'done' 
+          GROUP BY o.id ORDER BY o.id ASC";
+$ready_orders = $conn->query($query);
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Cashier Counter | Yong Kitchen</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Cashier Counter</title>
+    <link rel="stylesheet" href="https://cloudflare.com">
     <style>
-        :root { --primary: #6366f1; --bg: #f3f4f6; --dark: #111827; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root { --primary: #6366f1; --success: #10b981; --dark: #111827; --bg: #f3f4f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; }
         
-       
+        
         .sidebar { width: 80px; background: var(--dark); display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
-        .sidebar a { color: #4b5563; font-size: 1.5rem; margin-bottom: 30px; transition: 0.3s; }
+        .sidebar a { color: #4b5563; font-size: 1.5rem; margin-bottom: 30px; transition: 0.3s; text-decoration: none; }
         .sidebar a:hover, .sidebar a.active { color: white; }
 
-        .menu-section { flex: 1; padding: 30px; overflow-y: auto; }
-        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-        .item-btn { background: white; border: none; border-radius: 15px; padding: 12px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 100%; }
-        .item-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 12px rgba(0,0,0,0.1); }
-        .item-btn img { width: 100%; height: 100px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
-        .item-btn h4 { margin: 5px 0; font-size: 0.9rem; }
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        
+       
+        .btn-back { 
+            display: inline-flex; align-items: center; gap: 8px;
+            color: #4b5563; text-decoration: none; font-weight: bold; 
+            margin-bottom: 20px; transition: 0.2s;
+        }
+        .btn-back:hover { color: var(--primary); }
 
-        .billing-panel { width: 400px; background: white; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; padding: 25px; }
-        .receipt-header { border-bottom: 2px dashed #d1d5db; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
-        .order-scroll { flex: 1; overflow-y: auto; }
-        .order-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; border-bottom: 1px solid #f3f4f6; padding-bottom: 5px; }
-        
-        .total-box { border-top: 2px solid #f3f4f6; padding-top: 20px; }
-        .total-row { display: flex; justify-content: space-between; font-size: 1.5rem; font-weight: 800; margin-bottom: 20px; }
-        
-        .btn-pay { background: #10b981; color: white; border: none; width: 100%; padding: 16px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .btn-clear { display: block; text-align: center; color: #ef4444; margin-top: 15px; text-decoration: none; font-size: 0.9rem; }
+        .order-card { 
+            background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 8px solid var(--success);
+        }
+        .btn-pay { background: var(--success); color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <a href="admin.php"><i class="fas fa-home"></i></a>
+    <nav class="sidebar">
+        
+        <a href="admin.php" title="Back to Admin"><i class="fas fa-arrow-left"></i></a>
         <a href="cashier.php" class="active"><i class="fas fa-cash-register"></i></a>
-        <a href="order_index.php" target="_blank"><i class="fas fa-eye"></i></a>
-    </div>
+        <a href="kitchen.php"><i class="fas fa-fire-burner"></i></a>
+    </nav>
 
-    <div class="menu-section">
-        <h1>Cashier Counter</h1>
-        <div class="menu-grid">
-            <?php while($row = $items->fetch_assoc()): ?>
-                <form method="POST">
-                    <input type="hidden" name="item_id" value="<?php echo $row['id']; ?>">
-                    <input type="hidden" name="item_name" value="<?php echo $row['name']; ?>">
-                    <input type="hidden" name="item_price" value="<?php echo $row['price']; ?>">
-                    <button type="submit" name="add_to_order" class="item-btn">
-                        <?php 
-                        $img = $row['image_path'];
-                        $src = (strpos($img, 'http') === 0) ? $img : "uploads/" . $img;
-                        ?>
-                        <img src="<?php echo $src; ?>" onerror="this.src='https://placehold.co/100x100?text=Food'">
-                        <h4><?php echo $row['name']; ?></h4>
-                        <b style="color:var(--primary)">$<?php echo number_format($row['price'], 2); ?></b>
-                    </button>
-                </form>
+    <div class="main-content">
+        
+        <a href="admin.php" class="btn-back"><i class="fas fa-chevron-left"></i> Back to Dashboard</a>
+
+        <h1>Ready for Payment</h1>
+
+        <?php if ($ready_orders->num_rows > 0): ?>
+            <?php while($row = $ready_orders->fetch_assoc()): ?>
+                <div class="order-card">
+                    <div>
+                        <h3>Order #<?php echo $row['id']; ?> — Table <?php echo $row['table_number']; ?></h3>
+                        <p><?php echo $row['item_details']; ?></p>
+                    </div>
+                    <div style="text-align:right;">
+                        <h2 style="margin:0;">$<?php echo number_format($row['total_price'], 2); ?></h2>
+                        <form method="POST">
+                            <input type="hidden" name="order_id" value="<?php echo $row['id']; ?>">
+                            <button type="submit" name="process_payment" class="btn-pay">COMPLETE PAYMENT</button>
+                        </form>
+                    </div>
+                </div>
             <?php endwhile; ?>
-        </div>
-    </div>
-
-    <div class="billing-panel">
-        <div class="receipt-header">
-            <h3>Current Order</h3>
-            <small><?php echo date('Y-m-d H:i'); ?></small>
-        </div>
-
-        <div class="order-scroll">
-            <?php 
-            $grand_total = 0;
-           
-            $db_order = $conn->query("SELECT * FROM orders WHERE status = 'pending' ORDER BY id DESC LIMIT 1");
-            
-            if (!empty($_SESSION['cashier_cart'])) {
-               
-                foreach($_SESSION['cashier_cart'] as $item) {
-                    $subtotal = $item['qty'] * $item['price'];
-                    $grand_total += $subtotal;
-                    echo "<div class='order-row'><span>{$item['qty']}x {$item['name']}</span><strong>$".number_format($subtotal, 2)."</strong></div>";
-                }
-            } elseif ($db_order->num_rows > 0) {
-                
-                $order_info = $db_order->fetch_assoc();
-                $o_id = $order_info['id'];
-                $grand_total = $order_info['total_price'];
-                echo "<p style='color:var(--primary); font-size:0.8rem;'>Customer Order: #$o_id (Table: {$order_info['table_number']})</p>";
-                
-                $order_items = $conn->query("SELECT oi.*, i.name FROM order_items oi JOIN items i ON oi.item_id = i.id WHERE oi.order_id = $o_id");
-                while($oi = $order_items->fetch_assoc()) {
-                    echo "<div class='order-row'><span>{$oi['quantity']}x {$oi['name']}</span></div>";
-                }
-            } else {
-                echo "<div style='text-align:center; margin-top:50px; color:#9ca3af;'>Waiting for order...</div>";
-            }
-            ?>
-        </div>
-
-        <div class="total-box">
-            <div class="total-row">
-                <span>Total</span>
-                <span>$<?php echo number_format($grand_total, 2); ?></span>
+        <?php else: ?>
+            <div style="text-align:center; margin-top:100px; color:#9ca3af;">
+                <i class="fas fa-clock" style="font-size: 3rem;"></i>
+                <h2>No orders ready for payment yet.</h2>
             </div>
-            <form method="POST">
-                <input type="hidden" name="grand_total" value="<?php echo $grand_total; ?>">
-                <button type="submit" name="checkout_order" class="btn-pay" <?php echo ($grand_total <= 0) ? 'disabled' : ''; ?>>
-                    PROCESS PAYMENT
-                </button>
-            </form>
-            <a href="?clear=1" class="btn-clear">CLEAR ORDERS</a>
-        </div>
+        <?php endif; ?>
     </div>
+
 </body>
 </html>
