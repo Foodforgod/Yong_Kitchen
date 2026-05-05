@@ -1,8 +1,8 @@
 <?php
 session_start();
-include 'db.php'; // 确保 db.php 文件就在同一个文件夹下
+include 'db.php'; 
 
-// 1. 处理收银员手动点击添加的逻辑 (保留原有的 Session 功能)
+
 if (isset($_POST['add_to_order'])) {
     $id = $_POST['item_id'];
     $name = $_POST['item_name'];
@@ -22,17 +22,16 @@ if (isset($_POST['add_to_order'])) {
     }
 }
 
-// 2. 清除当前选中的订单
+
 if (isset($_GET['clear'])) { 
     unset($_SESSION['cashier_cart']); 
     header("Location: cashier.php"); 
     exit(); 
 }
 
-// 3. 结账逻辑
 if (isset($_POST['checkout_order'])) {
     $total = $_POST['grand_total'];
-    // 插入订单
+  
     $conn->query("INSERT INTO orders (table_number, total_price, status) VALUES ('Counter', '$total', 'completed')");
     $order_id = $conn->insert_id;
 
@@ -44,15 +43,15 @@ if (isset($_POST['checkout_order'])) {
         }
     }
     unset($_SESSION['cashier_cart']);
-    echo "<script>alert('结账成功！订单号: #$order_id'); window.location='cashier.php';</script>";
+    echo "<script>alert('Checkout successful! Order ID: #$order_id'); window.location='cashier.php';</script>";
 }
 
-// 获取菜单列表
+
 $items = $conn->query("SELECT * FROM items WHERE stock > 0 ORDER BY name ASC");
 ?>
 
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Cashier Counter | Yong Kitchen</title>
@@ -61,12 +60,11 @@ $items = $conn->query("SELECT * FROM items WHERE stock > 0 ORDER BY name ASC");
         :root { --primary: #6366f1; --bg: #f3f4f6; --dark: #111827; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        /* 侧边导航 */
+       
         .sidebar { width: 80px; background: var(--dark); display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
         .sidebar a { color: #4b5563; font-size: 1.5rem; margin-bottom: 30px; transition: 0.3s; }
         .sidebar a:hover, .sidebar a.active { color: white; }
 
-        /* 左侧菜单区 */
         .menu-section { flex: 1; padding: 30px; overflow-y: auto; }
         .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
         .item-btn { background: white; border: none; border-radius: 15px; padding: 12px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 100%; }
@@ -74,7 +72,6 @@ $items = $conn->query("SELECT * FROM items WHERE stock > 0 ORDER BY name ASC");
         .item-btn img { width: 100%; height: 100px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
         .item-btn h4 { margin: 5px 0; font-size: 0.9rem; }
 
-        /* 右侧收银面板 */
         .billing-panel { width: 400px; background: white; border-left: 1px solid #e5e7eb; display: flex; flex-direction: column; padding: 25px; }
         .receipt-header { border-bottom: 2px dashed #d1d5db; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
         .order-scroll { flex: 1; overflow-y: auto; }
@@ -126,29 +123,29 @@ $items = $conn->query("SELECT * FROM items WHERE stock > 0 ORDER BY name ASC");
         <div class="order-scroll">
             <?php 
             $grand_total = 0;
-            // 优先检查数据库里是否有待结账的客户订单
+           
             $db_order = $conn->query("SELECT * FROM orders WHERE status = 'pending' ORDER BY id DESC LIMIT 1");
             
             if (!empty($_SESSION['cashier_cart'])) {
-                // 显示收银员手动点击的东西
+               
                 foreach($_SESSION['cashier_cart'] as $item) {
                     $subtotal = $item['qty'] * $item['price'];
                     $grand_total += $subtotal;
                     echo "<div class='order-row'><span>{$item['qty']}x {$item['name']}</span><strong>$".number_format($subtotal, 2)."</strong></div>";
                 }
             } elseif ($db_order->num_rows > 0) {
-                // 如果 Session 是空的，自动抓取数据库里最新的客户下单
+                
                 $order_info = $db_order->fetch_assoc();
                 $o_id = $order_info['id'];
                 $grand_total = $order_info['total_price'];
-                echo "<p style='color:var(--primary); font-size:0.8rem;'>客户订单: #$o_id (桌号: {$order_info['table_number']})</p>";
+                echo "<p style='color:var(--primary); font-size:0.8rem;'>Customer Order: #$o_id (Table: {$order_info['table_number']})</p>";
                 
                 $order_items = $conn->query("SELECT oi.*, i.name FROM order_items oi JOIN items i ON oi.item_id = i.id WHERE oi.order_id = $o_id");
                 while($oi = $order_items->fetch_assoc()) {
                     echo "<div class='order-row'><span>{$oi['quantity']}x {$oi['name']}</span></div>";
                 }
             } else {
-                echo "<div style='text-align:center; margin-top:50px; color:#9ca3af;'>等待下单...</div>";
+                echo "<div style='text-align:center; margin-top:50px; color:#9ca3af;'>Waiting for order...</div>";
             }
             ?>
         </div>
