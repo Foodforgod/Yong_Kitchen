@@ -2,22 +2,22 @@
 session_start();
 include 'db.php';
 
-
+// --- 处理删除逻辑 ---
 if (isset($_GET['remove'])) {
     $remove_key = $_GET['remove'];
     if (isset($_SESSION['customer_cart'][$remove_key])) {
         unset($_SESSION['customer_cart'][$remove_key]);
-        
+        // 重新排序列索引，防止删除后索引混乱
         $_SESSION['customer_cart'] = array_values($_SESSION['customer_cart']);
     }
     header("Location: cart_view.php");
     exit();
 }
 
-
+// --- 处理下单逻辑 ---
 if (isset($_POST['confirm_order'])) {
     if (empty($_SESSION['customer_cart'])) {
-        echo "<script>alert('购物车是空的！'); window.location='order_index.php';</script>";
+        echo "<script>alert('Your cart is empty!'); window.location='order_index.php';</script>";
         exit();
     }
 
@@ -27,32 +27,36 @@ if (isset($_POST['confirm_order'])) {
         $total += ($item['qty'] * $item['price']);
     }
 
-    
+    // 1. 插入订单主表 (orders)
     $sql_order = "INSERT INTO orders (table_number, total_price, status) VALUES ('$table_no', '$total', 'pending')";
     
     if ($conn->query($sql_order)) {
         $order_id = $conn->insert_id;
 
-       
+        // 2. 插入订单详情 (order_items) 包含备注，并更新库存
         foreach ($_SESSION['customer_cart'] as $item) {
             $item_id = $item['id'];
             $qty = $item['qty'];
-        
+            // 处理备注信息
             $remarks = isset($item['remarks']) ? $conn->real_escape_string($item['remarks']) : '';
 
-            
             $sql_item = "INSERT INTO order_items (order_id, item_id, quantity, remarks) 
                          VALUES ($order_id, $item_id, $qty, '$remarks')";
             
             $conn->query($sql_item);
             
-           
+            // 扣除库存
             $conn->query("UPDATE items SET stock = stock - $qty WHERE id = $item_id");
         }
 
-        
+        // 3. 关键步骤：清空当前客户的购物车 Session
         unset($_SESSION['customer_cart']);
-        echo "<script>alert('下单成功！订单号: #$order_id'); window.location='order_index.php';</script>";
+
+        // 4. 跳转逻辑：提示成功并返回点餐首页 (不让客户看到 kitchen.php)
+        echo "<script>
+                alert('Order placed successfully! Your food is being prepared.'); 
+                window.location='order_index.php'; 
+              </script>";
     } else {
         echo "Error: " . $conn->error;
     }
@@ -61,11 +65,11 @@ if (isset($_POST['confirm_order'])) {
 ?>
 
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>my Cart | Yong Kitchen</title>
+    <title>My Cart | Yong Kitchen</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f3f4f6; padding: 20px; color: #1e293b; }
@@ -83,7 +87,7 @@ if (isset($_POST['confirm_order'])) {
 <body>
 
 <div class="cart-card">
-    <h2><i class="fas fa-shopping-cart"></i> Confirm Order</h2>
+    <h2><i class="fas fa-shopping-cart"></i> Confirm Your Order</h2>
     <hr>
 
     <?php if(!empty($_SESSION['customer_cart'])): ?>
@@ -97,7 +101,7 @@ if (isset($_POST['confirm_order'])) {
             <div class="item-details">
                 <strong><?php echo $item['qty']; ?>x <?php echo htmlspecialchars($item['name']); ?></strong><br>
                 
-              
+                <!-- 显示客户填写的备注 -->
                 <?php if(!empty($item['remarks'])): ?>
                     <span class="remarks-text">Note: <?php echo htmlspecialchars($item['remarks']); ?></span>
                 <?php endif; ?>
@@ -108,7 +112,7 @@ if (isset($_POST['confirm_order'])) {
         </div>
         <?php endforeach; ?>
 
-        <div class="total-section">TOTAL: $<?php echo number_format($grand_total, 2); ?></div>
+        <div class="total-section">Total: $<?php echo number_format($grand_total, 2); ?></div>
 
         <form method="POST" style="margin-top: 20px;">
             <p><strong><i class="fas fa-chair"></i> Select Table Number:</strong></p>
@@ -120,7 +124,7 @@ if (isset($_POST['confirm_order'])) {
                 <option value="T4">Table 4</option>
                 <option value="T5">Table 5</option>
             </select>
-            <button type="submit" name="confirm_order" class="btn-pay">Confirm Order (Send to Kitchen)</button>
+            <button type="submit" name="confirm_order" class="btn-pay">Confirm Order</button>
         </form>
 
     <?php else: ?>
