@@ -8,7 +8,9 @@ if (isset($_POST['add_item'])) {
     $price = $_POST['price'];
     $cat = $_POST['category'];
     $stock = $_POST['stock'];
+
     $image_url = $_POST['item_image_url'];
+
 
     $sql = "INSERT INTO items (name, description, price, category, stock, image_path) 
             VALUES ('$name', '$desc', '$price', '$cat', '$stock', '$image_url')";
@@ -35,6 +37,7 @@ if (isset($_POST['update_item'])) {
 
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
+
     $conn->query("DELETE FROM items WHERE id = $id");
     header("Location: admin.php?deleted=1");
     exit();
@@ -62,10 +65,12 @@ $items = $conn->query($query);
     <meta charset="UTF-8">
     <title>Admin Dashboard | RMS</title>
     <link rel="stylesheet" href="https://cloudflare.com">
+
     <style>
         :root { --primary: #2563eb; --danger: #ef4444; --warning: #f59e0b; --success: #10b981; --bg: #f8fafc; --dark: #1e293b; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; }
         .sidebar { width: 260px; height: 100vh; background: var(--dark); color: white; position: fixed; padding: 20px; box-sizing: border-box; }
+
         .sidebar h2 { color: #38bdf8; font-size: 1.2rem; margin-bottom: 30px; }
         .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
         .sidebar a:hover, .sidebar a.active { background: #334155; color: white; }
@@ -80,6 +85,7 @@ $items = $conn->query($query);
         .btn-green { background: var(--success); }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 15px; background: #f1f5f9; color: #475569; font-size: 0.8rem; text-transform: uppercase; }
+
         td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
         .item-img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; }
         .stock-tag { padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
@@ -92,10 +98,12 @@ $items = $conn->query($query);
 <body>
     <div class="sidebar">
         <h2><i class="fas fa-utensils"></i> RMS Admin</h2>
+
         <a href="admin.php" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
         <a href="cashier.php"><i class="fas fa-cash-register"></i> Cashier Counter</a>
         <a href="kitchen.php"><i class="fas fa-fire-burner"></i> Kitchen</a>
         <a href="order_index.php" target="_blank"><i class="fas fa-eye"></i> Customer View</a>
+
     </div>
 
     <div class="main">
@@ -105,6 +113,7 @@ $items = $conn->query($query);
         </div>
 
         <div class="grid">
+
             <div class="card">
                 <h3><i class="fas <?php echo $edit_item ? 'fa-edit' : 'fa-plus-circle'; ?>"></i> 
                 <?php echo $edit_item ? 'Edit Item' : 'Add New Item'; ?></h3>
@@ -130,6 +139,7 @@ $items = $conn->query($query);
                 </form>
             </div>
 
+
             <div class="card" style="padding:0; overflow:hidden;">
                 <div style="padding: 20px; border-bottom: 1px solid #eee;">
                     <form method="GET">
@@ -137,6 +147,7 @@ $items = $conn->query($query);
                         <button type="submit" class="btn btn-blue" style="width:auto; padding:10px 15px;">Search</button>
                     </form>
                 </div>
+
                 <table>
                     <thead>
                         <tr><th>Image</th><th>Details</th><th>Stock</th><th>Price</th><th>Actions</th></tr>

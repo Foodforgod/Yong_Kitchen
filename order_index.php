@@ -1,6 +1,7 @@
 <?php
 include 'db.php'; 
 
+
 $items = $conn->query("SELECT * FROM items WHERE stock > 0");
 ?>
 
@@ -31,5 +32,6 @@ $items = $conn->query("SELECT * FROM items WHERE stock > 0");
         </div>
         <?php endwhile; ?>
     </div>
+
 </body>
 </html>
