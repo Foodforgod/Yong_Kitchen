@@ -17,7 +17,7 @@ if (isset($_GET['remove'])) {
 
 if (isset($_POST['confirm_order'])) {
     if (empty($_SESSION['customer_cart'])) {
-        echo "<script>alert('Your cart is empty!'); window.location='order_index.php';</script>";
+        echo "<script>alert('购物车是空的！'); window.location='order_index.php';</script>";
         exit();
     }
 
@@ -37,25 +37,22 @@ if (isset($_POST['confirm_order'])) {
         foreach ($_SESSION['customer_cart'] as $item) {
             $item_id = $item['id'];
             $qty = $item['qty'];
+        
             $remarks = isset($item['remarks']) ? $conn->real_escape_string($item['remarks']) : '';
 
+            
             $sql_item = "INSERT INTO order_items (order_id, item_id, quantity, remarks) 
                          VALUES ($order_id, $item_id, $qty, '$remarks')";
             
             $conn->query($sql_item);
             
-            
+           
             $conn->query("UPDATE items SET stock = stock - $qty WHERE id = $item_id");
         }
 
         
         unset($_SESSION['customer_cart']);
-
-       
-        echo "<script>
-                alert('Order placed successfully! Redirecting to Cashier...'); 
-                window.location='cashier.php'; 
-              </script>";
+        echo "<script>alert('下单成功！订单号: #$order_id'); window.location='order_index.php';</script>";
     } else {
         echo "Error: " . $conn->error;
     }
@@ -64,11 +61,11 @@ if (isset($_POST['confirm_order'])) {
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Cart | Yong Kitchen</title>
+    <title>my Cart | Yong Kitchen</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f3f4f6; padding: 20px; color: #1e293b; }
@@ -100,6 +97,7 @@ if (isset($_POST['confirm_order'])) {
             <div class="item-details">
                 <strong><?php echo $item['qty']; ?>x <?php echo htmlspecialchars($item['name']); ?></strong><br>
                 
+              
                 <?php if(!empty($item['remarks'])): ?>
                     <span class="remarks-text">Note: <?php echo htmlspecialchars($item['remarks']); ?></span>
                 <?php endif; ?>
@@ -110,7 +108,7 @@ if (isset($_POST['confirm_order'])) {
         </div>
         <?php endforeach; ?>
 
-        <div class="total-section">Grand Total: $<?php echo number_format($grand_total, 2); ?></div>
+        <div class="total-section">总计: $<?php echo number_format($grand_total, 2); ?></div>
 
         <form method="POST" style="margin-top: 20px;">
             <p><strong><i class="fas fa-chair"></i> Select Table Number:</strong></p>
@@ -122,8 +120,7 @@ if (isset($_POST['confirm_order'])) {
                 <option value="T4">Table 4</option>
                 <option value="T5">Table 5</option>
             </select>
-            
-            <button type="submit" name="confirm_order" class="btn-pay">Confirm & Proceed to Payment</button>
+            <button type="submit" name="confirm_order" class="btn-pay">Confirm Order (Send to Kitchen)</button>
         </form>
 
     <?php else: ?>
