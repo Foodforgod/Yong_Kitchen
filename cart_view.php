@@ -108,7 +108,7 @@ if (isset($_POST['confirm_order'])) {
         </div>
         <?php endforeach; ?>
 
-        <div class="total-section">总计: $<?php echo number_format($grand_total, 2); ?></div>
+        <div class="total-section">TOTAL: $<?php echo number_format($grand_total, 2); ?></div>
 
         <form method="POST" style="margin-top: 20px;">
             <p><strong><i class="fas fa-chair"></i> Select Table Number:</strong></p>
