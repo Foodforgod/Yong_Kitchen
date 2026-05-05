@@ -1,99 +1,78 @@
 <?php
-session_start();
-include 'db.php'; 
+include 'db.php';
 
-
-if (isset($_POST['process_payment'])) {
+if (isset($_POST['pay'])) {
     $order_id = intval($_POST['order_id']);
-    $stmt = $conn->prepare("UPDATE orders SET status = 'completed' WHERE id = ? AND status = 'done'");
-    $stmt->bind_param("i", $order_id);
-    
-    if ($stmt->execute()) {
-        echo "<script>alert('Order #$order_id Paid!'); window.location='cashier.php';</script>";
-    }
+  
+    $conn->query("UPDATE orders SET status = 'completed' WHERE id = $order_id");
+    header("Location: cashier.php?view=unpaid");
+    exit();
 }
 
+$view = $_GET['view'] ?? 'unpaid';
 
-$query = "SELECT o.*, GROUP_CONCAT(CONCAT(oi.quantity, 'x ', i.name) SEPARATOR ', ') as item_details 
-          FROM orders o 
-          JOIN order_items oi ON o.id = oi.order_id 
-          JOIN items i ON oi.item_id = i.id 
-          WHERE o.status = 'done' 
-          GROUP BY o.id ORDER BY o.id ASC";
-$ready_orders = $conn->query($query);
+$status_filter = ($view == 'completed') ? 'completed' : 'ready';
+
+$orders = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as details 
+                        FROM orders o 
+                        JOIN order_items oi ON o.id = oi.order_id 
+                        JOIN items i ON oi.item_id = i.id 
+                        WHERE o.status = '$status_filter' 
+                        GROUP BY o.id ORDER BY o.id DESC");
 ?>
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Cashier Counter</title>
+    <title>Cashier Station</title>
     <link rel="stylesheet" href="https://cloudflare.com">
     <style>
-        :root { --primary: #6366f1; --success: #10b981; --dark: #111827; --bg: #f3f4f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; }
-        
-        
-        .sidebar { width: 80px; background: var(--dark); display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
-        .sidebar a { color: #4b5563; font-size: 1.5rem; margin-bottom: 30px; transition: 0.3s; text-decoration: none; }
-        .sidebar a:hover, .sidebar a.active { color: white; }
-
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
-        
-       
-        .btn-back { 
-            display: inline-flex; align-items: center; gap: 8px;
-            color: #4b5563; text-decoration: none; font-weight: bold; 
-            margin-bottom: 20px; transition: 0.2s;
-        }
-        .btn-back:hover { color: var(--primary); }
-
-        .order-card { 
-            background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; 
-            display: flex; justify-content: space-between; align-items: center; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-left: 8px solid var(--success);
-        }
-        .btn-pay { background: var(--success); color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        body { font-family: sans-serif; background: #f3f4f6; display: flex; margin: 0; }
+        .sidebar { width: 260px; background: #111827; height: 100vh; padding: 20px; box-sizing: border-box; position: fixed; color: white; }
+        .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+        .main { margin-left: 260px; padding: 40px; width: calc(100% - 260px); }
+        .tabs { margin-bottom: 20px; }
+        .tabs a { text-decoration: none; padding: 10px 20px; background: #e5e7eb; border-radius: 5px; margin-right: 10px; color: #4b5563; font-weight: bold; }
+        .tabs a.active { background: #2563eb; color: white; }
+        .row { background: white; padding: 20px; border-radius: 12px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .pay-btn { background: #10b981; color: white; border: none; padding: 10px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
+    <div class="sidebar">
+        <h2>Cashier</h2>
+        <a href="admin.php"><i class="fas fa-arrow-left"></i> Admin Dashboard</a>
+        <a href="kitchen.php"><i class="fas fa-utensils"></i> Kitchen View</a>
+    </div>
+    <div class="main">
+        <h1>Checkout</h1>
+        <div class="tabs">
+            <a href="?view=unpaid" class="<?php echo $view=='unpaid'?'active':''; ?>">UNPAID (FROM KITCHEN)</a>
+            <a href="?view=completed" class="<?php echo $view=='completed'?'active':''; ?>">PAID HISTORY</a>
+        </div>
 
-    <nav class="sidebar">
-        
-        <a href="admin.php" title="Back to Admin"><i class="fas fa-arrow-left"></i></a>
-        <a href="cashier.php" class="active"><i class="fas fa-cash-register"></i></a>
-        <a href="kitchen.php"><i class="fas fa-fire-burner"></i></a>
-    </nav>
-
-    <div class="main-content">
-        
-        <a href="admin.php" class="btn-back"><i class="fas fa-chevron-left"></i> Back to Dashboard</a>
-
-        <h1>Ready for Payment</h1>
-
-        <?php if ($ready_orders->num_rows > 0): ?>
-            <?php while($row = $ready_orders->fetch_assoc()): ?>
-                <div class="order-card">
-                    <div>
-                        <h3>Order #<?php echo $row['id']; ?> — Table <?php echo $row['table_number']; ?></h3>
-                        <p><?php echo $row['item_details']; ?></p>
-                    </div>
-                    <div style="text-align:right;">
-                        <h2 style="margin:0;">$<?php echo number_format($row['total_price'], 2); ?></h2>
-                        <form method="POST">
-                            <input type="hidden" name="order_id" value="<?php echo $row['id']; ?>">
-                            <button type="submit" name="process_payment" class="btn-pay">COMPLETE PAYMENT</button>
-                        </form>
-                    </div>
+        <?php if($orders->num_rows > 0): ?>
+            <?php while($row = $orders->fetch_assoc()): ?>
+            <div class="row">
+                <div>
+                    <strong style="font-size: 1.2rem;">Table <?php echo $row['table_number']; ?></strong><br>
+                    <small style="color: #6b7280;"><?php echo htmlspecialchars($row['details']); ?></small>
                 </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 1.3rem; font-weight: bold; margin-right: 20px;">$<?php echo number_format($row['total_price'], 2); ?></span>
+                    <?php if($view == 'unpaid'): ?>
+                    <form method="POST" style="display:inline;">
+                        <input type="hidden" name="order_id" value="<?php echo $row['id']; ?>">
+                        <button type="submit" name="pay" class="pay-btn">MARK AS PAID</button>
+                    </form>
+                    <?php else: ?>
+                        <span style="color: #10b981; font-weight: bold;"><i class="fas fa-check-circle"></i> PAID</span>
+                    <?php endif; ?>
+                </div>
+            </div>
             <?php endwhile; ?>
         <?php else: ?>
-            <div style="text-align:center; margin-top:100px; color:#9ca3af;">
-                <i class="fas fa-clock" style="font-size: 3rem;"></i>
-                <h2>No orders ready for payment yet.</h2>
-            </div>
+            <p style="margin-top: 30px; color: #9ca3af;">No orders found in this category.</p>
         <?php endif; ?>
     </div>
-
 </body>
 </html>

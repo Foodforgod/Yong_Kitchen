@@ -10,7 +10,6 @@ if (isset($_POST['add_item'])) {
     exit();
 }
 
-
 if (isset($_POST['update_item'])) {
     $stmt = $conn->prepare("UPDATE items SET name=?, description=?, price=?, category=?, stock=?, image_path=? WHERE id=?");
     $stmt->bind_param("ssdsisi", $_POST['item_name'], $_POST['description'], $_POST['price'], $_POST['category'], $_POST['stock'], $_POST['item_image_url'], $_POST['item_id']);
@@ -29,14 +28,6 @@ if (isset($_GET['delete'])) {
 }
 
 
-if (isset($_POST['clear_history'])) {
-   
-    $conn->query("DELETE FROM order_items"); 
-    $conn->query("DELETE FROM orders"); 
-    header("Location: admin.php?history_cleared=1");
-    exit();
-}
-
 
 $edit_item = null;
 if (isset($_GET['edit'])) {
@@ -47,75 +38,67 @@ if (isset($_GET['edit'])) {
 }
 
 
-$rev_res = $conn->query("SELECT SUM(total_price) as total FROM orders WHERE status = 'completed'");
-$revenue = $rev_res->fetch_assoc()['total'] ?? 0;
+$rev_query = $conn->query("SELECT SUM(total_price) as total FROM orders WHERE status = 'completed'");
+$rev = $rev_query->fetch_assoc()['total'] ?? 0;
 
 
-$history_query = "SELECT o.id, o.total_price, o.table_number, GROUP_CONCAT(CONCAT(oi.quantity, 'x ', i.name) SEPARATOR ', ') as summary 
-                 FROM orders o 
-                 JOIN order_items oi ON o.id = oi.order_id 
-                 JOIN items i ON oi.item_id = i.id 
-                 WHERE o.status = 'completed' 
-                 GROUP BY o.id ORDER BY o.id DESC LIMIT 15";
-$history = $conn->query($history_query);
+$items = $conn->query("SELECT * FROM items ORDER BY id DESC");
 
 
-$search = $_GET['search'] ?? '';
-$query = "SELECT * FROM items" . (!empty($search) ? " WHERE name LIKE ?" : "") . " ORDER BY id DESC";
-$stmt = $conn->prepare($query);
-if(!empty($search)) {
-    $term = "%$search%";
-    $stmt->bind_param("s", $term);
-}
-$stmt->execute();
-$items = $stmt->get_result();
+$history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item_names 
+                        FROM orders o 
+                        JOIN order_items oi ON o.id = oi.order_id 
+                        JOIN items i ON oi.item_id = i.id 
+                        WHERE o.status IN ('ready', 'completed') 
+                        GROUP BY o.id ORDER BY o.id DESC LIMIT 15");
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard | Yong Kitchen</title>
+    <title>Admin Dashboard | RMS</title>
     <link rel="stylesheet" href="https://cloudflare.com">
     <style>
-        :root { --primary: #2563eb; --danger: #ef4444; --success: #10b981; --bg: #f8fafc; --dark: #1e293b; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; }
+        :root { --primary: #2563eb; --danger: #ef4444; --success: #10b981; --dark: #1e293b; --bg: #f8fafc; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: #334155; }
         .sidebar { width: 260px; height: 100vh; background: var(--dark); color: white; position: fixed; padding: 20px; box-sizing: border-box; }
-        .sidebar h2 { color: #38bdf8; font-size: 1.2rem; margin-bottom: 30px; text-align: center; border-bottom: 1px solid #334155; padding-bottom: 15px; }
+        .sidebar h2 { color: #38bdf8; text-align: center; margin-bottom: 30px; }
         .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
-        .sidebar a:hover, .sidebar a.active { background: var(--primary); color: white; }
+        .sidebar a.active { background: var(--primary); color: white; }
         .main { margin-left: 260px; padding: 40px; width: calc(100% - 260px); }
-        .revenue-card { background: white; padding: 20px; border-radius: 15px; border-left: 6px solid var(--success); box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 250px; margin-bottom: 30px; }
-        .grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; }
-        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #e2e8f0; border-radius: 8px; box-sizing: border-box; }
-        .btn { border: none; width: 100%; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { text-align: left; padding: 15px; background: #f1f5f9; color: #475569; font-size: 0.85rem; text-transform: uppercase; }
-        td { padding: 15px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        .item-img { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; }
-        .status-paid { color: var(--success); font-weight: bold; background: #dcfce7; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
+        .rev-card { background: white; padding: 20px; border-radius: 15px; border-left: 6px solid var(--success); width: 250px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn { border: none; width: 100%; padding: 12px; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; background: #f1f5f9; font-size: 0.8rem; color: #64748b; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
+        .bg-paid { background: #dcfce7; color: #166534; }
+        .bg-unpaid { background: #fef3c7; color: #92400e; }
     </style>
 </head>
 <body>
+
     <div class="sidebar">
-        <h2>RMS ADMIN</h2>
+        <h2>RMS Admin</h2>
         <a href="admin.php" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
         <a href="cashier.php"><i class="fas fa-cash-register"></i> Cashier</a>
-        <a href="kitchen.php"><i class="fas fa-fire-burner"></i> Kitchen</a>
-        <a href="order_index.php" style="background:#475569; margin-top:20px;"><i class="fas fa-plus-circle"></i> Create New Order</a>
+        <a href="kitchen.php"><i class="fas fa-utensils"></i> Kitchen</a>
     </div>
 
     <div class="main">
-        <div class="revenue-card">
-            <small>TOTAL PAID REVENUE</small>
-            <h2 style="margin:5px 0;">$<?php echo number_format($revenue, 2); ?></h2>
+        <div class="rev-card">
+            <small style="font-weight:bold; color:#64748b;">TOTAL REVENUE (PAID)</small>
+            <h2 style="margin:5px 0; color:var(--success);">$<?php echo number_format($rev, 2); ?></h2>
         </div>
 
         <div class="grid">
-         
+            
             <div class="card">
-                <h3><i class="fas <?php echo $edit_item ? 'fa-edit' : 'fa-plus-circle'; ?>"></i> <?php echo $edit_item ? 'Edit' : 'Add'; ?> Item</h3>
+                <h3><?php echo $edit_item ? 'Edit Item' : 'Add New Item'; ?></h3>
                 <form method="POST">
                     <?php if($edit_item): ?> <input type="hidden" name="item_id" value="<?php echo $edit_item['id']; ?>"> <?php endif; ?>
                     <input type="text" name="item_name" placeholder="Name" value="<?php echo $edit_item['name'] ?? ''; ?>" required>
@@ -127,31 +110,26 @@ $items = $stmt->get_result();
                     </select>
                     <input type="number" name="stock" placeholder="Stock" value="<?php echo $edit_item['stock'] ?? ''; ?>" required>
                     <input type="text" name="item_image_url" placeholder="Image URL" value="<?php echo $edit_item['image_path'] ?? ''; ?>">
-                    <button type="submit" name="<?php echo $edit_item ? 'update_item' : 'add_item'; ?>" class="btn" style="background:<?php echo $edit_item ? 'var(--success)' : 'var(--primary)'; ?>">
-                        <?php echo $edit_item ? 'Update Item' : 'Add to Menu'; ?>
-                    </button>
-                    <?php if($edit_item): ?> <a href="admin.php" style="display:block; text-align:center; margin-top:10px; color:gray; text-decoration:none;">Cancel</a> <?php endif; ?>
+                    <button type="submit" name="<?php echo $edit_item ? 'update_item' : 'add_item'; ?>" class="btn" style="background:<?php echo $edit_item ? 'var(--success)' : 'var(--primary)'; ?>">Save</button>
+                    <?php if($edit_item): ?> <a href="admin.php" style="display:block; text-align:center; margin-top:10px; color:gray; text-decoration:none; font-size:0.8rem;">Cancel</a> <?php endif; ?>
                 </form>
             </div>
 
            
             <div class="card">
-                <form method="GET" style="display:flex; gap:10px; margin-bottom:20px;">
-                    <input type="text" name="search" placeholder="Search menu..." value="<?php echo htmlspecialchars($search); ?>" style="margin:0;">
-                    <button type="submit" class="btn" style="width:100px; background:var(--dark)">Search</button>
-                </form>
+                <h3>Current Menu</h3>
                 <table>
-                    <thead><tr><th>Image</th><th>Details</th><th>Stock</th><th>Price</th><th>Action</th></tr></thead>
+                    <thead><tr><th>Image</th><th>Name</th><th>Stock</th><th>Price</th><th>Action</th></tr></thead>
                     <tbody>
                         <?php while($row = $items->fetch_assoc()): ?>
                         <tr>
-                            <td><img src="<?php echo $row['image_path']; ?>" class="item-img" onerror="this.src='https://placehold.co'"></td>
+                            <td><img src="<?php echo $row['image_path']; ?>" style="width:40px; height:40px; border-radius:4px;" onerror="this.src='https://placehold.co'"></td>
                             <td><strong><?php echo htmlspecialchars($row['name']); ?></strong></td>
                             <td><?php echo $row['stock']; ?></td>
                             <td>$<?php echo number_format($row['price'], 2); ?></td>
                             <td>
-                                <a href="?edit=<?php echo $row['id']; ?>" style="color:var(--primary); margin-right:15px;"><i class="fas fa-edit"></i></a>
-                                <a href="?delete=<?php echo $row['id']; ?>" style="color:var(--danger);" onclick="return confirm('Delete?')"><i class="fas fa-trash"></i></a>
+                                <a href="?edit=<?php echo $row['id']; ?>" style="color:var(--primary); font-weight:bold; text-decoration:none; margin-right:10px;">EDIT</a>
+                                <a href="?delete=<?php echo $row['id']; ?>" style="color:var(--danger); font-weight:bold; text-decoration:none;" onclick="return confirm('Delete?')">DELETE</a>
                             </td>
                         </tr>
                         <?php endwhile; ?>
@@ -160,43 +138,29 @@ $items = $stmt->get_result();
             </div>
         </div>
 
-      
-        <div class="card" style="margin-top:30px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3><i class="fas fa-history"></i> Sales History</h3>
-                
-                
-                <form method="POST" onsubmit="return confirm('WARNING: This will permanently delete all sales history and reset the revenue. Continue?');">
-                    <button type="submit" name="clear_history" class="btn" style="background:var(--danger); padding: 8px 15px; font-size: 0.8rem; width: auto;">
-                        <i class="fas fa-trash-alt"></i> CLEAR ALL HISTORY
-                    </button>
-                </form>
-            </div>
-            
+        
+        <div class="card">
+            <h3>Recent Activity & Tracking</h3>
             <table>
                 <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Table</th>
-                        <th>Items</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                    </tr>
+                    <tr><th>Order ID</th><th>Table</th><th>Items</th><th>Total</th><th>Status</th></tr>
                 </thead>
                 <tbody>
-                    <?php if ($history && $history->num_rows > 0): ?>
-                        <?php while($h = $history->fetch_assoc()): ?>
-                        <tr>
-                            <td>#<?php echo $h['id']; ?></td>
-                            <td><strong>Table <?php echo htmlspecialchars($h['table_number']); ?></strong></td>
-                            <td style="font-size:0.85rem; color:#475569;"><?php echo htmlspecialchars($h['summary']); ?></td>
-                            <td><strong>$<?php echo number_format($h['total_price'], 2); ?></strong></td>
-                            <td><span class="status-paid">PAID</span></td>
-                        </tr>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <tr><td colspan="5" style="text-align:center; padding:20px; color:#94a3b8;">No history records found.</td></tr>
-                    <?php endif; ?>
+                    <?php while($h = $history->fetch_assoc()): ?>
+                    <tr>
+                        <td>#<?php echo $h['id']; ?></td>
+                        <td><strong>Table <?php echo htmlspecialchars($h['table_number']); ?></strong></td>
+                        <td><small><?php echo htmlspecialchars($h['item_names']); ?></small></td>
+                        <td>$<?php echo number_format($h['total_price'], 2); ?></td>
+                        <td>
+                            <?php if($h['status'] == 'completed'): ?>
+                                <span class="badge bg-paid">PAID</span>
+                            <?php else: ?>
+                                <span class="badge bg-unpaid">UNPAID</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
                 </tbody>
             </table>
         </div>
