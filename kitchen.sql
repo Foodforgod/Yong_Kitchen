@@ -1,14 +1,20 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 6280fc8d0a0b58f6b6169935d5fab08034176079
 DROP DATABASE IF EXISTS restaurant_db;
 
 
 CREATE DATABASE restaurant_db;
+<<<<<<< HEAD
 =======
 DROP DATABASE IF EXISTS restaurants_db;
 
 
 CREATE DATABASE restaurants_db;
 >>>>>>> 92d048ecd14d6e8b2b7a0d0cf5103462c8ae04d6
+=======
+>>>>>>> 6280fc8d0a0b58f6b6169935d5fab08034176079
 USE restaurant_db;
 
 
