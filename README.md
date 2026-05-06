@@ -1,11 +1,12 @@
 🍽️ Restaurant Management System (RMS)
-
+<br>
 A clean, responsive, and functional PHP-based management system for restaurants. This system handles everything from menu management and 
 
 order processing to real-time kitchen tracking and cashier checkouts.
 
-
+<br>
 🚀 Features
+<br>
 
 *Admin Dashboard: Manage menu items (CRUD), track live revenue, and monitor order history.
 
@@ -18,9 +19,9 @@ order processing to real-time kitchen tracking and cashier checkouts.
 *Order Workflow:Pending (Kitchen) → Ready (Cashier) → Completed (Paid/Admin History).
 
 
-
+<br>
 🛠️ Tech Stack
-
+<br>
 *Backend: PHP 8.x
 
 *Database: MySQL / PHPMYADMIN
@@ -30,9 +31,9 @@ order processing to real-time kitchen tracking and cashier checkouts.
 *Security: Prepared Statements (SQLi protection) and BCrypt Password Hashing.
 
 
-
+<br>
 📂 File Structure
-
+<br>
 ├── db.php      # Database connection settings
 
 ├── login.php   # Admin login page
@@ -50,25 +51,25 @@ order processing to real-time kitchen tracking and cashier checkouts.
 └── README.md            # Project documentation
 
 
-
+<br>
 ⚙️ Installation & Setup
-
+<br>
 Follow these steps to get your Restaurant Management System (RMS) running on your local machine:
-
+<br>
 Step 1: Environment Setup
-
+<br>
 *Ensure you have a local server environment installed (like XAMPP, WAMP, or MAMP).
 
 *Start the Apache and MySQL modules from your control panel.
-
+<br>
 Step 2: Project Deployment
-
+<br>
 *Create a folder named rms inside your server's root directory (e.g., C:/xampp/htdocs/rms).
 
 *Copy all the project files into this folder.
-
+<br>
 Step 3: Database Configuration
-
+<br>
 1.Open your browser and go to http://localhost/phpmyadmin.
 
 2.Click on the New tab on the left sidebar and create a database named restaurant_db.
@@ -76,7 +77,7 @@ Step 3: Database Configuration
 3.Click on your new database, then click the SQL tab at the top.
 
 4.Copy the SQL code below and paste it into the box, then click Go:
-
+<br>
 CREATE TABLE items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
@@ -106,23 +107,23 @@ CREATE TABLE admins (
     username VARCHAR(50) UNIQUE,
     password VARCHAR(255)
 );
-
+<br>
 Step 4: Database Connection
-
+<br>
 *Open the db.php file in your text editor.
 
 *Ensure the credentials match your local setup (usually root with no password for XAMPP).
-
+<br>
 Step 5: Admin Registration
-
+<br>
 1.Open your browser and navigate to http://localhost/rms/admin_register.php.
 
 2.Create your username and password.
 
 3.Important: For security, delete or rename admin_register.php after your account is created.
-
+<br>
 Step 6: Launch System
-
+<br>
 *Go to http://localhost/rms/login.php.
 
 *Log in with your new credentials to access the Admin Dashboard.
