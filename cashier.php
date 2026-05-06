@@ -1,9 +1,9 @@
 <?php
 include 'db.php';
 
-
 if (isset($_POST['pay'])) {
     $order_id = intval($_POST['order_id']);
+  
     $conn->query("UPDATE orders SET status = 'completed' WHERE id = $order_id");
     header("Location: cashier.php?view=unpaid");
     exit();
@@ -55,7 +55,6 @@ $orders = $conn->query($sql);
         <a href="admin.php"><i class="fas fa-arrow-left"></i> Admin Dashboard</a>
         <a href="kitchen.php"><i class="fas fa-utensils"></i> Kitchen View</a>
     </div>
-
     <div class="main">
         <h1>Checkout</h1>
         <div class="tabs">

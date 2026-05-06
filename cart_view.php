@@ -2,7 +2,6 @@
 session_start();
 include 'db.php';
 
-
 if (isset($_GET['remove'])) {
     $remove_key = $_GET['remove'];
     if (isset($_SESSION['customer_cart'][$remove_key])) {
@@ -13,7 +12,6 @@ if (isset($_GET['remove'])) {
     header("Location: cart_view.php");
     exit();
 }
-
 
 if (isset($_POST['confirm_order'])) {
     if (empty($_SESSION['customer_cart'])) {
