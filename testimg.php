@@ -1,0 +1,3 @@
+https://www.allrecipes.com/thmb/HJ1tuIo-zUOO_ReZk77k4npojTg=/0x512/filters:no_upscale():max_bytes(150000):strip_icc():format(webp)/50223-homemade-crispy-seasoned-french-fries-VAT-Beauty-4x3-789ecb2eaed34d6e879b9a93dd56a50a.jpg
+https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSiTy7K9gzHduql4bUBCCFi-4NceO7NW-WDbg&s
+https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTeCacsKFVUFTWs2O_nNZ-liKRkUT8eU8zBHQ&s
