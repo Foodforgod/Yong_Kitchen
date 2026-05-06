@@ -1,5 +1,15 @@
 <?php
+session_start();
+
+
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    header("Location: login.php");
+    exit();
+}
+
 include 'db.php';
+
+
 if (isset($_POST['add_item'])) {
     $stmt = $conn->prepare("INSERT INTO items (name, description, price, category, stock, image_path) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("ssdss", $_POST['item_name'], $_POST['description'], $_POST['price'], $_POST['category'], $_POST['stock'], $_POST['item_image_url']);
@@ -7,6 +17,7 @@ if (isset($_POST['add_item'])) {
     header("Location: admin.php?success=1");
     exit();
 }
+
 
 if (isset($_POST['update_item'])) {
     $stmt = $conn->prepare("UPDATE items SET name=?, description=?, price=?, category=?, stock=?, image_path=? WHERE id=?");
@@ -25,6 +36,8 @@ if (isset($_GET['delete'])) {
     exit();
 }
 
+
+
 $edit_item = null;
 if (isset($_GET['edit'])) {
     $stmt = $conn->prepare("SELECT * FROM items WHERE id = ?");
@@ -33,10 +46,13 @@ if (isset($_GET['edit'])) {
     $edit_item = $stmt->get_result()->fetch_assoc();
 }
 
+
 $rev_query = $conn->query("SELECT SUM(total_price) as total FROM orders WHERE status = 'completed'");
 $rev = $rev_query->fetch_assoc()['total'] ?? 0;
 
+
 $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
+
 
 $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item_names 
                         FROM orders o 
@@ -47,177 +63,143 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
 ?>
 
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>RMS Admin - Dashboard</title>
+    <title>Admin Dashboard | RMS</title>
+    <link rel="stylesheet" href="https://cloudflare.com">
     <style>
-        :root { 
-            --primary: #2563eb; 
-            --danger: #ef4444; 
-            --success: #10b981; 
-            --dark-blue: #1a233a; 
-            --bg-light: #f4f7fe; 
-        }
+        :root { --primary: #2563eb; --danger: #ef4444; --success: #10b981; --dark: #1e293b; --bg: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; color: #334155; }
         
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { background: var(--bg-light); display: flex; min-height: 100vh; }
-
-
-        .sidebar { width: 260px; background: var(--dark-blue); color: white; padding: 40px 20px; position: fixed; height: 100vh; }
-        .sidebar h2 { color: #4dabf7; margin-bottom: 40px; padding-left: 20px; font-size: 1.5rem; }
-        .sidebar a { color: #a0aec0; text-decoration: none; display: block; padding: 15px 20px; border-radius: 10px; margin-bottom: 10px; transition: 0.3s; }
-        .sidebar a.active, .sidebar a:hover { background: var(--primary); color: white; }
-        .main-content { flex: 1; margin-left: 260px; padding: 40px; }
+        .sidebar { width: 260px; height: 100vh; background: var(--dark); color: white; position: fixed; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }
+        .sidebar h2 { color: #38bdf8; text-align: center; margin-top: 0; margin-bottom: 30px; }
+        .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
+        .sidebar a.active { background: var(--primary); color: white; }
+        .logout-btn { background: #334155; color: #f8fafc !important; font-weight: bold; border: 1px solid #475569; }
+        .logout-btn:hover { background: var(--danger); }
         
-        .stat-card { background: white; padding: 25px; border-radius: 15px; width: 300px; border-left: 6px solid var(--success); box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 30px; }
-        .stat-label { color: #718096; font-size: 0.85rem; font-weight: bold; }
-        .stat-value { color: var(--success); font-size: 2rem; margin-top: 10px; }
-
-        .content-grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; align-items: start; }
+        .main { margin-left: 260px; padding: 40px; width: calc(100% - 260px); }
+        .rev-card { background: white; padding: 20px; border-radius: 15px; border-left: 6px solid var(--success); width: 250px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         
-        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        .card h3 { margin-bottom: 25px; color: #2d3748; }
-
+        .grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         
-        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; display: block; }
-        .btn-save { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; cursor: pointer; font-weight: bold; }
-        .btn-save.update { background: var(--success); }
-
+        input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn { border: none; width: 100%; padding: 12px; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; }
         
-        .menu-table { width: 100%; border-collapse: collapse; }
-        .menu-table th { text-align: left; color: #a0aec0; font-size: 0.85rem; padding: 12px; background: #f8fafc; }
-        .menu-table td { padding: 15px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        .thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px; background: #f1f5f9; font-size: 0.8rem; color: #64748b; text-transform: uppercase; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.9rem; }
         
-        .action-edit { color: var(--primary); text-decoration: none; font-weight: bold; margin-right: 15px; }
-        .action-delete { color: var(--danger); text-decoration: none; font-weight: bold; }
-
-        
-        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
         .bg-paid { background: #dcfce7; color: #166534; }
         .bg-unpaid { background: #fef3c7; color: #92400e; }
     </style>
 </head>
 <body>
-    
-    <aside class="sidebar">
-        <h2 class="logo">RMS Admin</h2>
-        <nav class="menu">
-            <a href="admin.php" class="active">Dashboard</a>
-            <a href="cashier.php">Cashier</a>
-            <a href="kitchen.php">Kitchen</a>
-        </nav>
-    </aside>
 
-    <main class="main-content">
-        
-        <div class="top-stats">
-            <div class="stat-card">
-                <span class="stat-label">TOTAL REVENUE (PAID)</span>
-                <h2 class="stat-value">$<?php echo number_format($rev, 2); ?></h2>
-            </div>
+    <div class="sidebar">
+        <div>
+            <h2>RMS Admin</h2>
+            <a href="admin.php" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+            <a href="cashier.php"><i class="fas fa-cash-register"></i> Cashier</a>
+            <a href="kitchen.php"><i class="fas fa-utensils"></i> Kitchen</a>
+        </div>
+        <div>
+            <a href="logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="rev-card">
+            <small style="font-weight: bold; color: #64748b;">TOTAL PAID REVENUE</small>
+            <h2 style="margin:5px 0; color: var(--success);">$<?php echo number_format($rev, 2); ?></h2>
         </div>
 
-        
-        <div class="content-grid">
-         
-            <section class="card">
-                <h3><?php echo $edit_item ? 'Edit Item' : 'Add New Item'; ?></h3>
+        <div class="grid">
+           
+            <div class="card">
+                <h3><i class="fas <?php echo $edit_item ? 'fa-edit' : 'fa-plus-circle'; ?>"></i> 
+                <?php echo $edit_item ? 'Edit Menu Item' : 'Add New Item'; ?></h3>
                 <form method="POST">
-                    <?php if($edit_item): ?> 
-                        <input type="hidden" name="item_id" value="<?php echo $edit_item['id']; ?>"> 
+                    <?php if($edit_item): ?>
+                        <input type="hidden" name="item_id" value="<?php echo $edit_item['id']; ?>">
                     <?php endif; ?>
-                    
-                    <input type="text" name="item_name" placeholder="Name" value="<?php echo $edit_item['name'] ?? ''; ?>" required>
+                    <input type="text" name="item_name" placeholder="Item Name" value="<?php echo $edit_item['name'] ?? ''; ?>" required>
                     <textarea name="description" placeholder="Description"><?php echo $edit_item['description'] ?? ''; ?></textarea>
-                    <input type="number" step="0.01" name="price" placeholder="Price" value="<?php echo $edit_item['price'] ?? ''; ?>" required>
-                    
+                    <input type="number" step="0.01" name="price" placeholder="Price ($)" value="<?php echo $edit_item['price'] ?? ''; ?>" required>
                     <select name="category">
                         <option value="Food" <?php echo ($edit_item && $edit_item['category']=='Food')?'selected':''; ?>>Food</option>
                         <option value="Drinks" <?php echo ($edit_item && $edit_item['category']=='Drinks')?'selected':''; ?>>Drinks</option>
                     </select>
+                    <input type="number" name="stock" placeholder="Stock Quantity" value="<?php echo $edit_item['stock'] ?? ''; ?>" required>
+                    <input type="text" name="item_image_url" placeholder="Image URL" value="<?php echo $edit_item['image_path'] ?? ''; ?>">
                     
-                    <input type="number" name="stock" placeholder="Stock" value="<?php echo $edit_item['stock'] ?? ''; ?>" required>
-                    <input type="text" name="item_image_url" placeholder="Image URL (e.g. burger.jpg)" value="<?php echo $edit_item['image_path'] ?? ''; ?>">
-                    
-                    <button type="submit" name="<?php echo $edit_item ? 'update_item' : 'add_item'; ?>" 
-                            class="btn-save <?php echo $edit_item ? 'update' : ''; ?>">
-                        <?php echo $edit_item ? 'Update Item' : 'Save'; ?>
+                    <button type="submit" name="<?php echo $edit_item ? 'update_item' : 'add_item'; ?>" class="btn" style="background:<?php echo $edit_item ? 'var(--success)' : 'var(--primary)'; ?>">
+                        <?php echo $edit_item ? 'Update Item' : 'Add to Menu'; ?>
                     </button>
-                    
-                    <?php if($edit_item): ?> 
-                        <a href="admin.php" style="display:block; text-align:center; margin-top:15px; color:#a0aec0; text-decoration:none; font-size:0.9rem;">Cancel Edit</a> 
+                    <?php if($edit_item): ?>
+                        <a href="admin.php" style="display:block; text-align:center; margin-top:10px; color:gray; text-decoration:none; font-size: 0.8rem;">Cancel Edit</a>
                     <?php endif; ?>
                 </form>
-            </section>
+            </div>
 
-            
-            <section class="card">
+           
+            <div class="card">
                 <h3>Current Menu</h3>
-                <table class="menu-table">
+                <table>
                     <thead>
-                        <tr>
-                            <th>Image</th>
-                            <th>Name</th>
-                            <th>Stock</th>
-                            <th>Price</th>
-                            <th>Action</th>
-                        </tr>
+                        <tr><th>Image</th><th>Name</th><th>Stock</th><th>Price</th><th>Action</th></tr>
                     </thead>
                     <tbody>
                         <?php while($row = $items->fetch_assoc()): ?>
                         <tr>
-                            <td>
-                                <img src="<?php echo $row['image_path']; ?>" class="thumb" 
-                                     onerror="this.src='https://placehold.co/100x100?text=No+Img'">
-                            </td>
+                            <td><img src="<?php echo $row['image_path']; ?>" style="width:40px; height:40px; border-radius:4px;" onerror="this.src='https://placehold.co'"></td>
                             <td><strong><?php echo htmlspecialchars($row['name']); ?></strong></td>
                             <td><?php echo $row['stock']; ?></td>
                             <td>$<?php echo number_format($row['price'], 2); ?></td>
                             <td>
-                                <a href="?edit=<?php echo $row['id']; ?>" class="action-edit">EDIT</a>
-                                <a href="?delete=<?php echo $row['id']; ?>" class="action-delete" onclick="return confirm('Confirm Delete?')">DELETE</a>
+                                <a href="?edit=<?php echo $row['id']; ?>" style="color:var(--primary); font-weight:bold; text-decoration:none; margin-right:10px;">EDIT</a>
+                                <a href="?delete=<?php echo $row['id']; ?>" style="color:var(--danger); font-weight:bold; text-decoration:none;" onclick="return confirm('Delete item?')">DELETE</a>
                             </td>
                         </tr>
                         <?php endwhile; ?>
                     </tbody>
                 </table>
-            </section>
+            </div>
         </div>
 
-        
-        <section class="card">
+       
+        <div class="card">
             <h3>Recent Activity & Tracking</h3>
-            <table class="menu-table">
+            <table>
                 <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Table</th>
-                        <th>Items</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                    </tr>
+                    <tr><th>Order ID</th><th>Table</th><th>Items</th><th>Total</th><th>Status</th></tr>
                 </thead>
                 <tbody>
-                    <?php while($h = $history->fetch_assoc()): ?>
-                    <tr>
-                        <td>#<?php echo $h['id']; ?></td>
-                        <td><strong>Table <?php echo htmlspecialchars($h['table_number']); ?></strong></td>
-                        <td><small><?php echo htmlspecialchars($h['item_names']); ?></small></td>
-                        <td>$<?php echo number_format($h['total_price'], 2); ?></td>
-                        <td>
-                            <?php if($h['status'] == 'completed'): ?>
-                                <span class="badge bg-paid">PAID</span>
-                            <?php else: ?>
-                                <span class="badge bg-unpaid">READY/UNPAID</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
+                    <?php if($history->num_rows > 0): ?>
+                        <?php while($h = $history->fetch_assoc()): ?>
+                        <tr>
+                            <td>#<?php echo $h['id']; ?></td>
+                            <td><strong>Table <?php echo htmlspecialchars($h['table_number']); ?></strong></td>
+                            <td><small><?php echo htmlspecialchars($h['item_names']); ?></small></td>
+                            <td>$<?php echo number_format($h['total_price'], 2); ?></td>
+                            <td>
+                                <?php if($h['status'] == 'completed'): ?>
+                                    <span class="badge bg-paid">PAID</span>
+                                <?php else: ?>
+                                    <span class="badge bg-unpaid">UNPAID</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <tr><td colspan="5" style="text-align:center; padding:20px; color:gray;">No orders tracked yet.</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
-        </section>
-    </main>
+        </div>
+    </div>
 </body>
 </html>
