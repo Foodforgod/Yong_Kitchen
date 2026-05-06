@@ -1,4 +1,12 @@
 <?php
+session_start();
+
+
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    header("Location: login.php");
+    exit();
+}
+
 include 'db.php';
 
 
@@ -9,6 +17,7 @@ if (isset($_POST['add_item'])) {
     header("Location: admin.php?success=1");
     exit();
 }
+
 
 if (isset($_POST['update_item'])) {
     $stmt = $conn->prepare("UPDATE items SET name=?, description=?, price=?, category=?, stock=?, image_path=? WHERE id=?");
@@ -24,6 +33,14 @@ if (isset($_GET['delete'])) {
     $stmt->bind_param("i", $_GET['delete']);
     $stmt->execute();
     header("Location: admin.php?deleted=1");
+    exit();
+}
+
+
+if (isset($_POST['clear_history'])) {
+    $conn->query("DELETE FROM order_items");
+    $conn->query("DELETE FROM orders");
+    header("Location: admin.php?history_cleared=1");
     exit();
 }
 
@@ -52,7 +69,6 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
                         WHERE o.status IN ('ready', 'completed') 
                         GROUP BY o.id ORDER BY o.id DESC LIMIT 15");
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -62,16 +78,22 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
     <style>
         :root { --primary: #2563eb; --danger: #ef4444; --success: #10b981; --dark: #1e293b; --bg: #f8fafc; }
         body { font-family: sans-serif; background: var(--bg); margin: 0; display: flex; color: #334155; }
-        .sidebar { width: 260px; height: 100vh; background: var(--dark); color: white; position: fixed; padding: 20px; box-sizing: border-box; }
-        .sidebar h2 { color: #38bdf8; text-align: center; margin-bottom: 30px; }
+        
+        .sidebar { width: 260px; height: 100vh; background: var(--dark); color: white; position: fixed; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }
+        .sidebar h2 { color: #38bdf8; text-align: center; margin-top: 0; margin-bottom: 30px; }
         .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
         .sidebar a.active { background: var(--primary); color: white; }
+        .logout-btn { background: #334155; color: #f8fafc !important; font-weight: bold; border: 1px solid #475569; }
+        .logout-btn:hover { background: var(--danger); }
+        
         .main { margin-left: 260px; padding: 40px; width: calc(100% - 260px); }
         .rev-card { background: white; padding: 20px; border-radius: 15px; border-left: 6px solid var(--success); width: 250px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; }
         .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
         input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         .btn { border: none; width: 100%; padding: 12px; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; }
+        
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 12px; background: #f1f5f9; font-size: 0.8rem; color: #64748b; }
         td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
@@ -83,10 +105,15 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
 <body>
 
     <div class="sidebar">
-        <h2>RMS Admin</h2>
-        <a href="admin.php" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
-        <a href="cashier.php"><i class="fas fa-cash-register"></i> Cashier</a>
-        <a href="kitchen.php"><i class="fas fa-utensils"></i> Kitchen</a>
+        <div>
+            <h2>RMS Admin</h2>
+            <a href="admin.php" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+            <a href="cashier.php"><i class="fas fa-cash-register"></i> Cashier</a>
+            <a href="kitchen.php"><i class="fas fa-utensils"></i> Kitchen</a>
+        </div>
+        <div>
+            <a href="logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </div>
     </div>
 
     <div class="main">
@@ -96,7 +123,7 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
         </div>
 
         <div class="grid">
-            
+           
             <div class="card">
                 <h3><?php echo $edit_item ? 'Edit Item' : 'Add New Item'; ?></h3>
                 <form method="POST">
@@ -110,12 +137,13 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
                     </select>
                     <input type="number" name="stock" placeholder="Stock" value="<?php echo $edit_item['stock'] ?? ''; ?>" required>
                     <input type="text" name="item_image_url" placeholder="Image URL" value="<?php echo $edit_item['image_path'] ?? ''; ?>">
+                    
                     <button type="submit" name="<?php echo $edit_item ? 'update_item' : 'add_item'; ?>" class="btn" style="background:<?php echo $edit_item ? 'var(--success)' : 'var(--primary)'; ?>">Save</button>
                     <?php if($edit_item): ?> <a href="admin.php" style="display:block; text-align:center; margin-top:10px; color:gray; text-decoration:none; font-size:0.8rem;">Cancel</a> <?php endif; ?>
                 </form>
             </div>
 
-           
+            
             <div class="card">
                 <h3>Current Menu</h3>
                 <table>
@@ -140,7 +168,12 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
 
         
         <div class="card">
-            <h3>Recent Activity & Tracking</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h3 style="margin:0;">Recent Activity & Tracking</h3>
+                <form method="POST" onsubmit="return confirm('Clear all history?')">
+                    <button type="submit" name="clear_history" class="btn" style="background:var(--danger); width:auto; padding:8px 15px; font-size:0.7rem;">CLEAR HISTORY</button>
+                </form>
+            </div>
             <table>
                 <thead>
                     <tr><th>Order ID</th><th>Table</th><th>Items</th><th>Total</th><th>Status</th></tr>
