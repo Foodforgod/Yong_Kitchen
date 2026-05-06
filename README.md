@@ -4,6 +4,7 @@ A clean, responsive, and functional PHP-based management system for restaurants.
 
 order processing to real-time kitchen tracking and cashier checkouts.
 
+
 🚀 Features
 
 *Admin Dashboard: Manage menu items (CRUD), track live revenue, and monitor order history.
@@ -17,6 +18,7 @@ order processing to real-time kitchen tracking and cashier checkouts.
 *Order Workflow:Pending (Kitchen) → Ready (Cashier) → Completed (Paid/Admin History).
 
 
+
 🛠️ Tech Stack
 
 *Backend: PHP 8.x
@@ -26,6 +28,7 @@ order processing to real-time kitchen tracking and cashier checkouts.
 *Frontend: HTML5, CSS3 (Flexbox/Grid), FontAwesome Icons
 
 *Security: Prepared Statements (SQLi protection) and BCrypt Password Hashing.
+
 
 
 📂 File Structure
@@ -45,6 +48,7 @@ order processing to real-time kitchen tracking and cashier checkouts.
 ├── logout.php           # Secure session termination
 
 └── README.md            # Project documentation
+
 
 
 ⚙️ Installation & Setup
@@ -124,6 +128,7 @@ Step 6: Launch System
 *Log in with your new credentials to access the Admin Dashboard.
     
     
+
 🔒 Security Notes
 
 *This system uses Prepared Statements to prevent SQL Injection.
