@@ -2,19 +2,19 @@
 session_start();
 include 'db.php';
 
-// --- 处理删除逻辑 ---
+
 if (isset($_GET['remove'])) {
     $remove_key = $_GET['remove'];
     if (isset($_SESSION['customer_cart'][$remove_key])) {
         unset($_SESSION['customer_cart'][$remove_key]);
-        // 重新排序列索引，防止删除后索引混乱
+        
         $_SESSION['customer_cart'] = array_values($_SESSION['customer_cart']);
     }
     header("Location: cart_view.php");
     exit();
 }
 
-// --- 处理下单逻辑 ---
+
 if (isset($_POST['confirm_order'])) {
     if (empty($_SESSION['customer_cart'])) {
         echo "<script>alert('Your cart is empty!'); window.location='order_index.php';</script>";
@@ -27,17 +27,17 @@ if (isset($_POST['confirm_order'])) {
         $total += ($item['qty'] * $item['price']);
     }
 
-    // 1. 插入订单主表 (orders)
+   
     $sql_order = "INSERT INTO orders (table_number, total_price, status) VALUES ('$table_no', '$total', 'pending')";
     
     if ($conn->query($sql_order)) {
         $order_id = $conn->insert_id;
 
-        // 2. 插入订单详情 (order_items) 包含备注，并更新库存
+       
         foreach ($_SESSION['customer_cart'] as $item) {
             $item_id = $item['id'];
             $qty = $item['qty'];
-            // 处理备注信息
+           
             $remarks = isset($item['remarks']) ? $conn->real_escape_string($item['remarks']) : '';
 
             $sql_item = "INSERT INTO order_items (order_id, item_id, quantity, remarks) 
@@ -45,14 +45,14 @@ if (isset($_POST['confirm_order'])) {
             
             $conn->query($sql_item);
             
-            // 扣除库存
+           
             $conn->query("UPDATE items SET stock = stock - $qty WHERE id = $item_id");
         }
 
-        // 3. 关键步骤：清空当前客户的购物车 Session
+       
         unset($_SESSION['customer_cart']);
 
-        // 4. 跳转逻辑：提示成功并返回点餐首页 (不让客户看到 kitchen.php)
+       
         echo "<script>
                 alert('Order placed successfully! Your food is being prepared.'); 
                 window.location='order_index.php'; 
@@ -101,7 +101,7 @@ if (isset($_POST['confirm_order'])) {
             <div class="item-details">
                 <strong><?php echo $item['qty']; ?>x <?php echo htmlspecialchars($item['name']); ?></strong><br>
                 
-                <!-- 显示客户填写的备注 -->
+                
                 <?php if(!empty($item['remarks'])): ?>
                     <span class="remarks-text">Note: <?php echo htmlspecialchars($item['remarks']); ?></span>
                 <?php endif; ?>

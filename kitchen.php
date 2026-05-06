@@ -1,25 +1,7 @@
 <?php
 include 'db.php';
 
-<<<<<<< HEAD
 
-if (isset($_GET['complete'])) {
-    $id = $_GET['complete'];
-    $conn->query("UPDATE orders SET status = 'completed' WHERE id = $id");
-}
-
-$orders = $conn->query("SELECT * FROM orders WHERE status = 'pending'");
-?>
-
-<h1>Kitchen View</h1>
-<?php while($row = $orders->fetch_assoc()): ?>
-    <div style="border: 1px solid #ccc; margin: 10px; padding: 10px;">
-        <h3>Order #<?php echo $row['id']; ?> - Table <?php echo $row['table_number']; ?></h3>
-        <a href="?complete=<?php echo $row['id']; ?>">Mark as Completed (Delete)</a>
-    </div>
-<?php endwhile; ?>
-=======
-// 只获取待处理 (pending) 的订单[cite: 8]
 $sql_orders = "SELECT * FROM orders WHERE status = 'pending' ORDER BY id ASC";
 $result_orders = $conn->query($sql_orders);
 ?>
@@ -29,13 +11,13 @@ $result_orders = $conn->query($sql_orders);
 <head>
     <meta charset="UTF-8">
     <title>Kitchen Display System</title>
-    <meta http-equiv="refresh" content="10"> <!-- 每10秒自动刷新[cite: 8] -->
-    <!-- 引入 FontAwesome 图标库 -->
+    <meta http-equiv="refresh" content="10">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: sans-serif; background: #1e1e1e; color: #fff; padding: 20px; margin: 0; }
         
-        /* 新增：顶部导航栏样式 */
+        
         .top-nav { 
             display: flex; 
             justify-content: space-between; 
@@ -66,10 +48,10 @@ $result_orders = $conn->query($sql_orders);
 </head>
 <body>
 
-    <!-- 新增：顶部控制区域 -->
+ 
     <div class="top-nav">
         <h1 style="margin: 0; font-size: 1.5rem;">👨‍🍳 Kitchen Display</h1>
-        <!-- 返回 Admin Dashboard 的链接[cite: 7] -->
+       
         <a href="admin.php" class="btn-back">
             <i class="fas fa-arrow-left"></i> Back to Admin
         </a>
@@ -102,7 +84,7 @@ $result_orders = $conn->query($sql_orders);
                     <?php endwhile; ?>
                 </ul>
 
-                <!-- 提交到更新状态的脚本 -->
+               
                 <form action="update_status.php" method="POST" style="text-align: right;">
                     <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
                     <button type="submit" name="mark_done" class="btn-done">Mark as Done</button>
@@ -118,4 +100,3 @@ $result_orders = $conn->query($sql_orders);
 
 </body>
 </html>
->>>>>>> 6280fc8d0a0b58f6b6169935d5fab08034176079
