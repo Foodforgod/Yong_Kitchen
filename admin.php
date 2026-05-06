@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header("Location: login.php");
     exit();
@@ -9,15 +8,14 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 include 'db.php';
 
-
 if (isset($_POST['add_item'])) {
+   
     $stmt = $conn->prepare("INSERT INTO items (name, description, price, category, stock, image_path) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssdss", $_POST['item_name'], $_POST['description'], $_POST['price'], $_POST['category'], $_POST['stock'], $_POST['item_image_url']);
-    $stmt->execute();
+    $stmt->bind_param("ssdssi", $_POST['item_name'], $_POST['description'], $_POST['price'], $_POST['category'], $_POST['stock'], $_POST['item_image_url']);
+    $stmt->execute(); 
     header("Location: admin.php?success=1");
     exit();
 }
-
 
 if (isset($_POST['update_item'])) {
     $stmt = $conn->prepare("UPDATE items SET name=?, description=?, price=?, category=?, stock=?, image_path=? WHERE id=?");
@@ -27,7 +25,6 @@ if (isset($_POST['update_item'])) {
     exit();
 }
 
-
 if (isset($_GET['delete'])) {
     $stmt = $conn->prepare("DELETE FROM items WHERE id = ?");
     $stmt->bind_param("i", $_GET['delete']);
@@ -35,8 +32,6 @@ if (isset($_GET['delete'])) {
     header("Location: admin.php?deleted=1");
     exit();
 }
-
-
 
 $edit_item = null;
 if (isset($_GET['edit'])) {
@@ -46,13 +41,10 @@ if (isset($_GET['edit'])) {
     $edit_item = $stmt->get_result()->fetch_assoc();
 }
 
-
 $rev_query = $conn->query("SELECT SUM(total_price) as total FROM orders WHERE status = 'completed'");
 $rev = $rev_query->fetch_assoc()['total'] ?? 0;
 
-
 $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
-
 
 $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item_names 
                         FROM orders o 
@@ -61,7 +53,6 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
                         WHERE o.status IN ('ready', 'completed') 
                         GROUP BY o.id ORDER BY o.id DESC LIMIT 15");
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -118,7 +109,6 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
         </div>
 
         <div class="grid">
-           
             <div class="card">
                 <h3><i class="fas <?php echo $edit_item ? 'fa-edit' : 'fa-plus-circle'; ?>"></i> 
                 <?php echo $edit_item ? 'Edit Menu Item' : 'Add New Item'; ?></h3>
@@ -145,7 +135,6 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
                 </form>
             </div>
 
-           
             <div class="card">
                 <h3>Current Menu</h3>
                 <table>
@@ -170,7 +159,6 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
             </div>
         </div>
 
-       
         <div class="card">
             <h3>Recent Activity & Tracking</h3>
             <table>
