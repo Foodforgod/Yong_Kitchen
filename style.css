@@ -1,4 +1,4 @@
-/* 全局样式重置 */
+
 * {
     margin: 0;
     padding: 0;
@@ -7,7 +7,7 @@
 }
 
 body {
-    background-color: #f4f7fe; /* 浅蓝色背景 */
+    background-color: #f4f7fe; 
 }
 
 .admin-container {
@@ -15,10 +15,10 @@ body {
     min-height: 100vh;
 }
 
-/* 侧边栏样式 */
+
 .sidebar {
     width: 260px;
-    background-color: #1a233a; /* 深蓝色 */
+    background-color: #1a233a; 
     color: white;
     padding: 40px 20px;
 }
@@ -44,13 +44,13 @@ body {
     color: white;
 }
 
-/* 主内容区 */
+
 .main-content {
     flex: 1;
     padding: 40px;
 }
 
-/* 顶部卡片 */
+
 .top-stats {
     margin-bottom: 30px;
 }
@@ -76,15 +76,15 @@ body {
     margin-top: 10px;
 }
 
-/* 解决中间空着的关键：栅格布局 */
+
 .content-grid {
     display: grid;
-    grid-template-columns: 350px 1fr; /* 左侧固定宽度，右侧自适应 */
+    grid-template-columns: 350px 1fr; 
     gap: 30px;
     align-items: start;
 }
 
-/* 通用卡片样式 */
+
 .card {
     background: white;
     padding: 30px;
@@ -97,7 +97,7 @@ body {
     color: #2d3748;
 }
 
-/* 表单元素 */
+
 input, textarea, select {
     width: 100%;
     padding: 12px;
@@ -118,7 +118,7 @@ input, textarea, select {
     font-weight: bold;
 }
 
-/* 表格样式 */
+
 .menu-table {
     width: 100%;
     border-collapse: collapse;
