@@ -116,7 +116,7 @@ Step 4: Database Connection
 <br>
 Step 5: Admin Registration
 <br>
-1.Open your browser and navigate to http://localhost/rms/admin_register.php.
+1.Open your browser and navigate to http://localhost:8080/admin_register.php
 
 2.Create your username and password.
 
@@ -124,7 +124,7 @@ Step 5: Admin Registration
 <br>
 Step 6: Launch System
 <br>
-*Go to http://localhost/rms/login.php.
+*Go to http://localhost:8080/login.php
 
 *Log in with your new credentials to access the Admin Dashboard.
     
