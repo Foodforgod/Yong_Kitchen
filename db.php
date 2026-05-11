@@ -1,12 +1,13 @@
 <?php
 $host = "localhost";
 $user = "root";
-$pass = "1234"; 
+$pass = ""; 
 $dbname = "restaurant_db"; 
+$port = 3306; 
 
-$conn = new mysqli($host, $user, $pass, $dbname,3307);
+$conn = new mysqli($host, $user, $pass, $dbname, $port);
 
 if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+    die("Database Connection Error: " . $conn->connect_error);
 }
 ?>

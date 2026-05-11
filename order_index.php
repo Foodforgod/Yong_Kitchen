@@ -2,7 +2,6 @@
 session_start();
 include 'db.php'; 
 
-
 if (isset($_POST['add_to_cart'])) {
     $id = $_POST['item_id'];
     $name = $_POST['item_name'];
@@ -12,7 +11,6 @@ if (isset($_POST['add_to_cart'])) {
     
     if (!isset($_SESSION['customer_cart'])) { $_SESSION['customer_cart'] = []; }
     
-    
     $_SESSION['customer_cart'][] = [
         'id' => $id, 
         'name' => $name, 
@@ -20,15 +18,21 @@ if (isset($_POST['add_to_cart'])) {
         'qty' => $qty,
         'remarks' => $remarks 
     ];
-    
 
     header("Location: order_index.php");
     exit();
 }
 
+$search_term = "";
+$query = "SELECT * FROM items WHERE stock > 0";
 
-$items = $conn->query("SELECT * FROM items WHERE stock > 0 ORDER BY id DESC");
+if (isset($_GET['search']) && !empty(trim($_GET['search']))) {
+    $search_term = $conn->real_escape_string(trim($_GET['search']));
+    $query .= " AND (name LIKE '%$search_term%' OR category LIKE '%$search_term%')";
+}
 
+$query .= " ORDER BY id DESC";
+$items = $conn->query($query);
 
 $cart_count = 0;
 if(isset($_SESSION['customer_cart'])) {
@@ -37,106 +41,94 @@ if(isset($_SESSION['customer_cart'])) {
 ?>
 
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Menu | Yong Kitchen</title>
+    <title>Menu | Digital Ordering System</title>
+    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --white: #ffffff; --text: #1e293b; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; }
-        
-        nav { background: var(--white); padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
-        .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary); }
-        
-        .cart-link { position: relative; color: var(--primary); font-size: 1.6rem; text-decoration: none; }
-        .badge { position: absolute; top: -5px; right: -10px; background: #ef4444; color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 50%; }
-
-        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
-        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
-        
-        .item-card { background: var(--white); border-radius: 20px; overflow: hidden; box-shadow: 0 10px 15px rgba(0,0,0,0.05); transition: 0.3s; }
-        .item-card:hover { transform: translateY(-5px); }
-
-        .image-box { width: 100%; height: 200px; background: #e2e8f0; }
-        .image-box img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .item-info { padding: 20px; }
-        .price-row { display: flex; justify-content: space-between; align-items: center; margin: 15px 0; }
-        .price { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
-        
-        .qty-selector { display: flex; align-items: center; gap: 10px; background: #f1f5f9; padding: 5px 10px; border-radius: 10px; margin-bottom: 10px; }
-        .qty-selector input { border: none; background: transparent; width: 40px; text-align: center; font-weight: bold; }
-
-        .remarks-input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.85rem; box-sizing: border-box; }
-
-        .btn-add { background: var(--primary); color: white; border: none; width: 100%; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-add:hover { background: #1d4ed8; }
-
-        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px 5%; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
-        .btn-checkout { background: #10b981; color: white; padding: 12px 25px; border-radius: 10px; text-decoration: none; font-weight: bold; }
-    </style>
 </head>
-<body>
+<body class="customer-body">
 
-<nav>
-    <div class="logo"><i class="fas fa-utensils"></i> Yong Kitchen</div>
-    <a href="cart_view.php" class="cart-link">
-        <i class="fas fa-shopping-cart"></i>
-        <?php if($cart_count > 0) echo "<span class='badge'>$cart_count</span>"; ?>
-    </a>
-</nav>
+<div class="menu-container">
+    <div class="menu-header">
+        <h1>Welcome to Our Menu</h1>
+        <p>Select your favorites and we'll handle the rest.</p>
+    </div>
 
-<div class="container">
+    <div class="card" style="margin-bottom: 30px; padding: 15px;">
+        <form method="GET" action="order_index.php" style="display: flex; gap: 10px;">
+            <div style="flex-grow: 1; position: relative;">
+                <i class="fas fa-search" style="position: absolute; left: 15px; top: 15px; color: #94a3b8;"></i>
+                <input type="text" name="search" value="<?php echo htmlspecialchars($search_term); ?>" 
+                       placeholder="Search for dishes or categories..." 
+                       style="padding-left: 45px; margin-bottom: 0;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding: 0 25px;">Search</button>
+            <?php if(!empty($search_term)): ?>
+                <a href="order_index.php" class="btn btn-danger" style="text-decoration:none;">Clear</a>
+            <?php endif; ?>
+        </form>
+    </div>
+
     <div class="menu-grid">
-        <?php while($row = $items->fetch_assoc()): ?>
-        <div class="item-card">
-            <div class="image-box">
-                <?php 
-                $img = $row['image_path'];
-                $src = (strpos($img, 'http') === 0) ? $img : "uploads/" . $img;
-                ?>
-                <img src="<?php echo $src; ?>" onerror="this.src='https://placehold.co/300x200?text=Food'">
-            </div>
-            <div class="item-info">
-                <h3 style="margin:0;"><?php echo htmlspecialchars($row['name']); ?></h3>
-                <p style="color:#64748b; font-size:0.9rem; height:40px; margin:10px 0; overflow:hidden;"><?php echo htmlspecialchars($row['description']); ?></p>
+        <?php if($items->num_rows > 0): ?>
+            <?php while($row = $items->fetch_assoc()): ?>
+            <div class="item-card">
+                <img src="<?php echo !empty($row['image_path']) ? $row['image_path'] : 'https://placehold.co/400x250?text=Food+Image'; ?>" class="item-image" alt="Dish">
                 
-                <div class="price-row">
-                    <span class="price">$<?php echo number_format($row['price'], 2); ?></span>
-                    <span style="font-size:0.8rem; color:#166534;">Stock: <?php echo $row['stock']; ?></span>
-                </div>
-
-                <form method="POST">
-                    <input type="hidden" name="item_id" value="<?php echo $row['id']; ?>">
-                    <input type="hidden" name="item_name" value="<?php echo htmlspecialchars($row['name']); ?>">
-                    <input type="hidden" name="price" value="<?php echo $row['price']; ?>">
+                <div class="item-content">
+                    <div class="item-name"><?php echo htmlspecialchars($row['name']); ?></div>
+                    <div class="item-desc"><?php echo htmlspecialchars($row['description']); ?></div>
                     
-                    <div class="qty-selector">
-                        <small>Qty:</small>
-                        <input type="number" name="qty" value="1" min="1" max="<?php echo $row['stock']; ?>">
+                    <div class="price-stock-row">
+                        <span class="item-price">$<?php echo number_format($row['price'], 2); ?></span>
+                        <span class="badge bg-completed" style="font-size:0.6rem;">Stock: <?php echo $row['stock']; ?></span>
                     </div>
-                    
-                
-                    <input type="text" name="remarks" placeholder="Notes (e.g. No Veggies)" class="remarks-input">
-                    
-                    <button type="submit" name="add_to_cart" class="btn-add">
-                        <i class="fas fa-plus"></i> ADD TO CART
-                    </button>
-                </form>
+
+                    <form method="POST">
+                        <input type="hidden" name="item_id" value="<?php echo $row['id']; ?>">
+                        <input type="hidden" name="item_name" value="<?php echo htmlspecialchars($row['name']); ?>">
+                        <input type="hidden" name="price" value="<?php echo $row['price']; ?>">
+                        
+                        <div class="qty-remarks-area" style="background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 12px;">
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                                <small>Qty:</small>
+                                <input type="number" name="qty" value="1" min="1" max="<?php echo $row['stock']; ?>" style="margin:0; padding:5px; width:60px;">
+                            </div>
+                            <input type="text" name="remarks" placeholder="Add notes (e.g. No onion)" class="remarks-input" style="font-size:0.8rem;">
+                        </div>
+                        
+                        <button type="submit" name="add_to_cart" class="btn btn-primary" style="width:100%; border-radius: 8px;">
+                            <i class="fas fa-plus"></i> ADD TO CART
+                        </button>
+                    </form>
+                </div>
             </div>
-        </div>
-        <?php endwhile; ?>
+            <?php endwhile; ?>
+        <?php else: ?>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 50px;">
+                <i class="fas fa-utensils" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 15px;"></i>
+                <h3>No items found</h3>
+                <p>Try searching for something else!</p>
+                <a href="order_index.php" class="btn btn-primary">Refresh Menu</a>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
 <?php if($cart_count > 0): ?>
 <div class="bottom-bar">
-    <span><b><?php echo $cart_count; ?></b> items in cart</span>
-    <a href="cart_view.php" class="btn-checkout">GO TO CHECKOUT <i class="fas fa-chevron-right"></i></a>
+    <div class="cart-info">
+        <i class="fas fa-shopping-basket"></i>
+        <span><b><?php echo $cart_count; ?></b> items in selection</span>
+    </div>
+    <a href="cart_view.php" class="btn-checkout">
+        VIEW CART <i class="fas fa-arrow-right"></i>
+    </a>
 </div>
 <?php endif; ?>
 
-</body>
+<div style="height: 100px;"></div> </body>
 </html>

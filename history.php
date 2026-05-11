@@ -1,101 +1,146 @@
 <?php
 session_start();
+include 'db.php';
 
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header("Location: login.php");
     exit();
 }
 
-include 'db.php';
+$start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
+$end_date = $_GET['end_date'] ?? date('Y-m-d');
 
-if (isset($_POST['add_item'])) {
-   
-    $stmt = $conn->prepare("INSERT INTO items (name, description, price, category, stock, image_path) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssdssi", $_POST['item_name'], $_POST['description'], $_POST['price'], $_POST['category'], $_POST['stock'], $_POST['item_image_url']);
-    $stmt->execute(); 
-    header("Location: admin.php?success=1");
-    exit();
-}
+$revenue_query = "SELECT SUM(total_price) as total FROM orders WHERE status='completed' AND DATE(created_at) BETWEEN '$start_date' AND '$end_date'";
+$total_revenue = $conn->query($revenue_query)->fetch_assoc()['total'] ?? 0;
 
-if (isset($_POST['update_item'])) {
-    $stmt = $conn->prepare("UPDATE items SET name=?, description=?, price=?, category=?, stock=?, image_path=? WHERE id=?");
-    $stmt->bind_param("ssdsisi", $_POST['item_name'], $_POST['description'], $_POST['price'], $_POST['category'], $_POST['stock'], $_POST['item_image_url'], $_POST['item_id']);
-    $stmt->execute();
-    header("Location: admin.php?updated=1");
-    exit();
-}
+$order_count_query = "SELECT COUNT(*) as count FROM orders WHERE status='completed' AND DATE(created_at) BETWEEN '$start_date' AND '$end_date'";
+$total_orders = $conn->query($order_count_query)->fetch_assoc()['count'] ?? 0;
 
-if (isset($_GET['delete'])) {
-    $stmt = $conn->prepare("DELETE FROM items WHERE id = ?");
-    $stmt->bind_param("i", $_GET['delete']);
-    $stmt->execute();
-    header("Location: admin.php?deleted=1");
-    exit();
-}
-
-$edit_item = null;
-if (isset($_GET['edit'])) {
-    $stmt = $conn->prepare("SELECT * FROM items WHERE id = ?");
-    $stmt->bind_param("i", $_GET['edit']);
-    $stmt->execute();
-    $edit_item = $stmt->get_result()->fetch_assoc();
-}
-
-$rev_query = $conn->query("SELECT SUM(total_price) as total FROM orders WHERE status = 'completed'");
-$rev = $rev_query->fetch_assoc()['total'] ?? 0;
-
-$items = $conn->query("SELECT * FROM items ORDER BY id DESC");
-
-$history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item_names 
-                        FROM orders o 
-                        JOIN order_items oi ON o.id = oi.order_id 
-                        JOIN items i ON oi.item_id = i.id 
-                        WHERE o.status IN ('ready', 'completed') 
-                        GROUP BY o.id ORDER BY o.id DESC LIMIT 15");
+$history_query = "SELECT * FROM orders 
+                  WHERE status = 'completed' 
+                  AND DATE(created_at) BETWEEN '$start_date' AND '$end_date' 
+                  ORDER BY created_at DESC";
+$history = $conn->query($history_query);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard | RMS</title>
-    <link rel="stylesheet" href="https://cloudflare.com">
+    <title>Sales History | RMS</title>
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        :root { --primary: #2563eb; --danger: #ef4444; --success: #10b981; --dark: #1e293b; --bg: #f8fafc; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; color: #334155; }
-        
-        .sidebar { width: 260px; height: 100vh; background: var(--dark); color: white; position: fixed; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; }
-        .sidebar h2 { color: #38bdf8; text-align: center; margin-top: 0; margin-bottom: 30px; }
-        .sidebar a { color: #cbd5e1; text-decoration: none; display: block; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
-        .sidebar a.active { background: var(--primary); color: white; }
-        .logout-btn { background: #334155; color: #f8fafc !important; font-weight: bold; border: 1px solid #475569; }
-        .logout-btn:hover { background: var(--danger); }
-        
-        .main { margin-left: 260px; padding: 40px; width: calc(100% - 260px); }
-        .rev-card { background: white; padding: 20px; border-radius: 15px; border-left: 6px solid var(--success); width: 250px; margin-bottom: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        
-        .grid { display: grid; grid-template-columns: 350px 1fr; gap: 30px; margin-bottom: 30px; }
-        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        
-        input, select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        .btn { border: none; width: 100%; padding: 12px; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; }
-        
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 12px; background: #f1f5f9; font-size: 0.8rem; color: #64748b; text-transform: uppercase; }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 0.9rem; }
-        
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; }
-        .bg-paid { background: #dcfce7; color: #166534; }
-        .bg-unpaid { background: #fef3c7; color: #92400e; }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-    <?php include 'navbar.php'; ?>
+    <div class="sidebar">
+        <h2>RMS ADMIN</h2>
+        <a href="admin.php"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="history.php" class="active"><i class="fas fa-history"></i> History</a> 
+        <a href="kitchen.php"><i class="fas fa-utensils"></i> Kitchen</a>
+        <a href="cashier.php"><i class="fas fa-cash-register"></i> Cashier</a>
+        <a href="logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
 
-    <div class="main">
-        <h1>Order History</h1>
-        
+    <div class="main-content">
+        <div class="header-flex">
+            <h1>Sales & Order History</h1>
+            <div class="user-info">Report Period: <b><?php echo $start_date; ?></b> to <b><?php echo $end_date; ?></b></div>
+        </div>
+
+        <div class="card" style="margin-bottom: 25px;">
+            <form method="GET" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label>From Date</label>
+                    <input type="date" name="start_date" value="<?php echo $start_date; ?>" style="margin-bottom:0; width: 100%;">
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <label>To Date</label>
+                    <input type="date" name="end_date" value="<?php echo $end_date; ?>" style="margin-bottom:0; width: 100%;">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary" style="height: 45px; padding: 0 25px;">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="history.php" class="btn btn-danger" style="height: 45px; text-decoration:none; display: flex; align-items: center; justify-content: center; padding: 0 20px;">
+                        Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <small>REVENUE (PERIOD)</small>
+                <h2 style="color: var(--primary);">$<?php echo number_format($total_revenue, 2); ?></h2>
+            </div>
+            <div class="stat-card" style="border-left-color: #10b981;">
+                <small>ORDERS COMPLETED</small>
+                <h2><?php echo $total_orders; ?></h2>
+            </div>
+            <div class="stat-card" style="border-left-color: #f59e0b;">
+                <small>AVG. TICKET SIZE</small>
+                <h2>$<?php echo ($total_orders > 0) ? number_format($total_revenue / $total_orders, 2) : '0.00'; ?></h2>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3><i class="fas fa-list"></i> Transaction Logs</h3>
+            <div class="table-container">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8fafc;">
+                            <th style="padding: 15px; text-align: left;">Date/Time</th>
+                            <th style="padding: 15px; text-align: left;">Order ID</th>
+                            <th style="padding: 15px; text-align: left;">Table</th>
+                            <th style="padding: 15px; text-align: left;">Items Consumed</th>
+                            <th style="padding: 15px; text-align: left;">Total</th>
+                            <th style="padding: 15px; text-align: left;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if($history && $history->num_rows > 0): ?>
+                            <?php while($row = $history->fetch_assoc()): ?>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 15px;">
+                                    <strong><?php echo date('M d, Y', strtotime($row['created_at'])); ?></strong><br>
+                                    <small style="color: #64748b;"><?php echo date('h:i A', strtotime($row['created_at'])); ?></small>
+                                </td>
+                                <td style="padding: 15px;">#<?php echo $row['id']; ?></td>
+                                <td style="padding: 15px;"><b><?php echo htmlspecialchars($row['table_number']); ?></b></td>
+                                <td style="padding: 15px;">
+                                    <?php
+                                    $order_id = $row['id'];
+                                    $items_query = "SELECT oi.quantity, i.name 
+                                                   FROM order_items oi 
+                                                   JOIN items i ON oi.item_id = i.id 
+                                                   WHERE oi.order_id = $order_id";
+                                    $items_result = $conn->query($items_query);
+                                    while($item = $items_result->fetch_assoc()) {
+                                        echo "<div style='font-size: 0.85rem;'>{$item['quantity']}x " . htmlspecialchars($item['name']) . "</div>";
+                                    }
+                                    ?>
+                                </td>
+                                <td style="padding: 15px;"><b style="color: #10b981;">$<?php echo number_format($row['total_price'], 2); ?></b></td>
+                                <td style="padding: 15px;">
+                                    <span style="background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;">
+                                        PAID
+                                    </span>
+                                </td>
+                            </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 50px; color: #94a3b8;">
+                                    <i class="fas fa-folder-open" style="font-size: 2rem; display: block; margin-bottom: 10px;"></i>
+                                    No completed orders found for this date range.
+                                </td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </body>
 </html>
