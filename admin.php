@@ -59,6 +59,7 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
     <meta charset="UTF-8">
     <title>Admin Dashboard | RMS</title>
     <link rel="stylesheet" href="https://cloudflare.com">
+    <link rel="stylesheet" href="css/style.css">
     <style>
         :root { --primary: #2563eb; --danger: #ef4444; --success: #10b981; --dark: #1e293b; --bg: #f8fafc; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; display: flex; color: #334155; }
@@ -90,17 +91,7 @@ $history = $conn->query("SELECT o.*, GROUP_CONCAT(i.name SEPARATOR ', ') as item
 </head>
 <body>
 
-    <div class="sidebar">
-        <div>
-            <h2>RMS Admin</h2>
-            <a href="admin.php" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
-            <a href="cashier.php"><i class="fas fa-cash-register"></i> Cashier</a>
-            <a href="kitchen.php"><i class="fas fa-utensils"></i> Kitchen</a>
-        </div>
-        <div>
-            <a href="logout.php" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-        </div>
-    </div>
+    <?php include 'navbar.php'; ?>
 
     <div class="main">
         <div class="rev-card">
