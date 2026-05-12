@@ -1,4 +1,4 @@
-🍽️ Restaurant Management System (RMS)
+🍽️ Restaurant Management System (RMS)           <br><br>Group Programming Design Member:Yong Gene,Zhi Bin,Zhan Ming                  
 
 A professional-grade, PHP-based web application designed to streamline restaurant operations. This system manages the full lifecycle of an order—from the customer's initial selection to kitchen preparation, final checkout, and sales reporting.
 
