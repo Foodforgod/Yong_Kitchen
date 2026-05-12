@@ -1,141 +1,76 @@
 🍽️ Restaurant Management System (RMS)
-<br>
-A clean, responsive, and functional PHP-based management system for restaurants. This system handles everything from menu management and 
 
-order processing to real-time kitchen tracking and cashier checkouts.
+A professional-grade, PHP-based web application designed to streamline restaurant operations. This system manages the full lifecycle of an order—from the customer's initial selection to kitchen preparation, final checkout, and sales reporting.
 
-<br>
-🚀 Features
-<br>
+---
 
-*Admin Dashboard: Manage menu items (CRUD), track live revenue, and monitor order history.
+## 📂 System Architecture & Workflow
 
-*Secure Authentication: Admin login and registration system using PHP Sessions and password_hash.
+The system is divided into three distinct modules that interact in real-time:
 
-*Kitchen Display: Real-time view for chefs to see pending orders and mark them as "Ready."
+1.  **Customer Module (`order_index.php`):** Browse menu, filter by category, and add items to a session-based cart.
+2.  **Kitchen Module (`kitchen.php`):** Real-time display of pending orders with item-by-item status toggling.
+3.  **Admin/Cashier Module (`admin.php`, `cashier.php`):** Inventory management, payment processing, and revenue analytics.
 
-*Cashier Station: Handle payments for orders coming out of the kitchen.
+---
 
-*Order Workflow:Pending (Kitchen) → Ready (Cashier) → Completed (Paid/Admin History).
+## 🚀 Key Features
 
+### 🛒 Ordering & Cart
+* **Dynamic Menu:** Automatically hides out-of-stock items.
+* **Table Assignment:** Supports 15 unique tables for precise service.
+* **Custom Remarks:** Customers can add special instructions (e.g., "no onions") per item.
 
-<br>
-🛠️ Tech Stack
-<br>
-*Backend: PHP 8.x
+### 👨‍🍳 Kitchen Workflow
+* **AJAX Item Toggling:** Chefs can mark individual dishes as "Done" without refreshing the page.
+* **Ready Logic:** Orders can only be sent to the cashier once every item in that order is marked finished.
+* **Auto-Refresh:** The kitchen display updates every 30 seconds to ensure no order is missed.
 
-*Database: MySQL / PHPMYADMIN
+### 💳 Cashier & Finance
+* **Change Calculator:** Built-in JS logic to prevent mathematical errors during checkout.
+* **Printable Receipts:** Clean, "receipt-style" layout for physical printing.
+* **Sales History:** Filterable reports showing total revenue and most popular items within specific date ranges.
 
-*Frontend: HTML5, CSS3 (Flexbox/Grid), FontAwesome Icons
+---
 
-*Security: Prepared Statements (SQLi protection) and BCrypt Password Hashing.
+## 🛠️ Technical Stack
 
+* **Backend:** PHP 8.1+
+* **Database:** MySQL (MariaDB)
+* **Frontend:** Vanilla JS (Fetch API), CSS3 (Flex/Grid), FontAwesome 6.0
+* **Authentication:** Session-based with BCrypt password hashing.
 
-<br>
-📂 File Structure
-<br>
-├── db.php      # Database connection settings
+---
 
-├── login.php   # Admin login page
+## 📋 Database Schema
 
-├── admin_register.php   # Create new admin accounts
+The system relies on a relational database (`restaurant_db`). Key tables include:
 
-├── admin.php             # Main dashboard & menu management
+* **`items`**: Stores name, price, category, stock, and image paths.
+* **`orders`**: Tracks table numbers, total price, and status (`pending`, `ready`, `completed`).
+* **`order_items`**: Junction table linking orders to items with specific quantities and status.
+* **`admins`**: Stores encrypted credentials for staff access.
 
-├── kitchen.php          # Kitchen order queue
+---
 
-├── cashier.php           # Payment processing station
+## ⚙️ Setup Instructions
 
-├── logout.php           # Secure session termination
+1.  **Server Requirements:** Install XAMPP, WAMP, or any environment supporting PHP 8.x and MySQL.
+2.  **Database Import:**
+    * Create a database named `restaurant_db`.
+    * Import the provided `restaurant_db.sql` file.
+3.  **Connection:**
+    * Update `db.php` with your local database credentials (host, user, password).
+4.  **Admin Setup:**
+    * Navigate to `admin_register.php` to create the first admin account.
+    * **⚠️ SECURITY:** Delete `admin_register.php` from the server immediately after registration.
+5.  **Accessing the System:**
+    * **Customer Menu:** `order_index.php`
+    * **Staff Login:** `login.php`
 
-└── README.md            # Project documentation
+---
 
-
-<br>
-⚙️ Installation & Setup
-<br>
-Follow these steps to get your Restaurant Management System (RMS) running on your local machine:
-<br>
-Step 1: Environment Setup
-<br>
-*Ensure you have a local server environment installed (like XAMPP, WAMP, or MAMP).
-
-*Start the Apache and MySQL modules from your control panel.
-<br>
-Step 2: Project Deployment
-<br>
-*Create a folder named rms inside your server's root directory (e.g., C:/xampp/htdocs/rms).
-
-*Copy all the project files into this folder.
-<br>
-Step 3: Database Configuration
-<br>
-1.Open your browser and go to http://localhost/phpmyadmin.
-
-2.Click on the New tab on the left sidebar and create a database named restaurant_db.
-
-3.Click on your new database, then click the SQL tab at the top.
-
-4.Copy the SQL code below and paste it into the box, then click Go:
-<br>
-CREATE TABLE items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255),
-    description TEXT,
-    price DECIMAL(10,2),
-    category ENUM('Food', 'Drinks'),
-    stock INT,
-    image_path VARCHAR(255)
-);
-
-CREATE TABLE orders (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    table_number INT,
-    total_price DECIMAL(10,2),
-    status ENUM('pending', 'ready', 'completed') DEFAULT 'pending'
-);
-
-CREATE TABLE order_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    order_id INT,
-    item_id INT,
-    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-);
-
-CREATE TABLE admins (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) UNIQUE,
-    password VARCHAR(255)
-);
-<br>
-Step 4: Database Connection
-<br>
-*Open the db.php file in your text editor.
-
-*Ensure the credentials match your local setup (usually root with no password for XAMPP).
-<br>
-Step 5: Admin Registration
-<br>
-1.Open your browser and navigate to http://localhost:8080/admin_register.php
-
-2.Create your username and password.
-
-3.Important: For security, delete or rename admin_register.php after your account is created.
-<br>
-Step 6: Launch System
-<br>
-*Go to http://localhost:8080/login.php
-
-*Log in with your new credentials to access the Admin Dashboard.
-    
-    
-
-🔒 Security Notes
-
-*This system uses Prepared Statements to prevent SQL Injection.
-
-*Passwords are never stored in plain text; they are encrypted using PASSWORD_DEFAULT.
-
-*The admin.php page is protected by a session guard; unauthorized users are redirected to the login page.
-
-
+## 🔒 Security Measures
+* **Prepared Statements:** Utilized in critical areas to prevent SQL Injection.
+* **Session Validation:** Admin pages (`admin.php`, `history.php`, etc.) check for active login sessions.
+* **Inventory Protection:** Logic prevents ordering more items than what is currently in stock.
