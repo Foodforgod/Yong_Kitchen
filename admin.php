@@ -19,7 +19,7 @@ if (isset($_POST['add_item'])) {
 
     if (!empty($name) && $price > 0) {
         $stmt = $conn->prepare("INSERT INTO items (name, description, price, category, stock, image_path) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssdssi", $name, $desc, $price, $cat, $stock, $img);
+        $stmt->bind_param("ssdsis", $name, $desc, $price, $cat, $stock, $img);
         if ($stmt->execute()) {
             $message = "<div class='alert success'>Item '$name' added successfully!</div>";
         } else {
@@ -38,7 +38,7 @@ if (isset($_POST['update_item'])) {
     $desc = trim($_POST['description']);
 
     $stmt = $conn->prepare("UPDATE items SET name=?, description=?, price=?, category=?, stock=?, image_path=? WHERE id=?");
-    $stmt->bind_param("ssdssii", $name, $desc, $price, $cat, $stock, $img, $id);
+    $stmt->bind_param("ssdsisi", $name, $desc, $price, $cat, $stock, $img, $id);
     
     if ($stmt->execute()) {
         $message = "<div class='alert success'>Item updated successfully!</div>";
@@ -68,11 +68,17 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-       
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
-        .modal-content { background: white; margin: 5% auto; padding: 25px; width: 450px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .close-btn { float: right; cursor: pointer; font-size: 24px; color: #64748b; }
-        .close-btn:hover { color: #ef4444; }
+        .modal-content { 
+            background: white; 
+            margin: 5vh auto; 
+            padding: 25px; 
+            width: 90%; 
+            max-width: 450px; 
+            border-radius: 15px; 
+            max-height: 85vh; 
+            overflow-y: auto; 
+        }
         .img-preview-table { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; }
     </style>
 </head>
@@ -97,18 +103,14 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
         <?php if(isset($_GET['deleted'])) echo "<div class='alert success'>Item removed successfully.</div>"; ?>
 
         <div class="stats-row">
-            <a href="history.php" style="text-decoration: none; color: inherit; flex: 1;">
-                <div class="stat-card">
-                    <small>TOTAL REVENUE</small>
-                    <h2 style="color: #10b981;">$<?php echo number_format($total_revenue, 2); ?></h2>
-                </div>
-            </a>
-            <a href="history.php" style="text-decoration: none; color: inherit; flex: 1;">
-                <div class="stat-card" style="border-left-color: #3b82f6;">
-                    <small>COMPLETED ORDERS</small>
-                    <h2><?php echo $total_orders; ?></h2>
-                </div>
-            </a>
+            <div class="stat-card" style="flex: 1;">
+                <small>TOTAL REVENUE</small>
+                <h2 style="color: #10b981;">$<?php echo number_format($total_revenue, 2); ?></h2>
+            </div>
+            <div class="stat-card" style="border-left-color: #3b82f6; flex: 1;">
+                <small>COMPLETED ORDERS</small>
+                <h2><?php echo $total_orders; ?></h2>
+            </div>
             <div class="stat-card" style="border-left-color: #f59e0b; flex: 1;">
                 <small>PENDING ORDERS</small>
                 <h2><?php echo $pending_orders; ?></h2>
@@ -116,12 +118,11 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px;">
-            
             <div class="card">
                 <h3><i class="fas fa-plus-circle"></i> Add New Product</h3>
                 <form method="POST">
                     <label>Product Name</label>
-                    <input type="text" name="name" required placeholder="e.g. Burger">
+                    <input type="text" name="name" required placeholder="e.g. Classic Burger">
                     
                     <div style="display:flex; gap:10px;">
                         <div style="flex:1">
@@ -142,13 +143,13 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
                         <option>Dessert</option>
                     </select>
 
-                    <label>Image Filename/URL</label>
-                    <input type="text" name="image_url" placeholder="e.g. image_9489fb.png">
+                    <label>Image URL / Filename</label>
+                    <input type="text" name="image_url" placeholder="e.g. burger.jpg">
 
                     <label>Description</label>
-                    <textarea name="description" rows="3"></textarea>
+                    <textarea name="description" rows="2"></textarea>
 
-                    <button type="submit" name="add_item" class="btn btn-primary" style="width:100%">
+                    <button type="submit" name="add_item" class="btn btn-primary" style="width:100%; height:45px; margin-top:10px;">
                         <i class="fas fa-save"></i> Save to Menu
                     </button>
                 </form>
@@ -170,13 +171,13 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
                         <tbody>
                             <?php if($items->num_rows > 0): ?>
                                 <?php while($row = $items->fetch_assoc()): ?>
-                                <tr>
+                                <tr class="item-row">
                                     <td>
-                                        <img src="<?php echo $row['image_path'] ?: 'https://placehold.co/50'; ?>" class="img-preview-table">
+                                        <img src="<?php echo !empty($row['image_path']) ? $row['image_path'] : 'https://placehold.co/50'; ?>" class="img-preview-table">
                                     </td>
                                     <td>
                                         <b><?php echo htmlspecialchars($row['name']); ?></b><br>
-                                        <small><?php echo htmlspecialchars($row['category']); ?></small>
+                                        <small style="color: #64748b;"><?php echo htmlspecialchars($row['category']); ?></small>
                                     </td>
                                     <td>$<?php echo number_format($row['price'], 2); ?></td>
                                     <td><?php echo $row['stock']; ?></td>
@@ -202,20 +203,22 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
 
     <div id="editModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h3><i class="fas fa-edit"></i> Edit Product</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0;">Edit Product</h2>
+                <span onclick="closeModal()" style="cursor:pointer; font-size:1.5rem;">&times;</span>
+            </div>
             <form method="POST">
                 <input type="hidden" name="item_id" id="edit_id">
                 
                 <label>Product Name</label>
                 <input type="text" name="name" id="edit_name" required>
                 
-                <div style="display:flex; gap:10px;">
-                    <div style="flex:1">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div>
                         <label>Price ($)</label>
                         <input type="number" step="0.01" name="price" id="edit_price" required>
                     </div>
-                    <div style="flex:1">
+                    <div>
                         <label>Stock</label>
                         <input type="number" name="stock" id="edit_stock" required>
                     </div>
@@ -229,13 +232,13 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
                     <option>Dessert</option>
                 </select>
 
-                <label>Image Filename/URL</label>
+                <label>Image URL</label>
                 <input type="text" name="image_url" id="edit_image">
 
                 <label>Description</label>
-                <textarea name="description" id="edit_desc" rows="3"></textarea>
+                <textarea name="description" id="edit_desc" rows="2"></textarea>
 
-                <button type="submit" name="update_item" class="btn btn-primary" style="width:100%; margin-top:10px;">
+                <button type="submit" name="update_item" class="btn btn-primary" style="width:100%; height: 45px; margin-top:15px;">
                     Update Product
                 </button>
             </form>

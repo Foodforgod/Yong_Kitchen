@@ -16,6 +16,19 @@ $total_revenue = $conn->query($revenue_query)->fetch_assoc()['total'] ?? 0;
 $order_count_query = "SELECT COUNT(*) as count FROM orders WHERE status='completed' AND DATE(created_at) BETWEEN '$start_date' AND '$end_date'";
 $total_orders = $conn->query($order_count_query)->fetch_assoc()['count'] ?? 0;
 
+$most_ordered_query = "SELECT i.name, SUM(oi.quantity) as total_qty 
+                       FROM order_items oi 
+                       JOIN items i ON oi.item_id = i.id 
+                       JOIN orders o ON oi.order_id = o.id 
+                       WHERE o.status = 'completed' 
+                       AND DATE(o.created_at) BETWEEN '$start_date' AND '$end_date' 
+                       GROUP BY i.id 
+                       ORDER BY total_qty DESC 
+                       LIMIT 1";
+$most_ordered_result = $conn->query($most_ordered_query)->fetch_assoc();
+$popular_item = $most_ordered_result['name'] ?? 'N/A';
+$popular_qty = $most_ordered_result['total_qty'] ?? 0;
+
 $history_query = "SELECT * FROM orders 
                   WHERE status = 'completed' 
                   AND DATE(created_at) BETWEEN '$start_date' AND '$end_date' 
@@ -45,27 +58,21 @@ $history = $conn->query($history_query);
     <div class="main-content">
         <div class="header-flex">
             <h1>Sales & Order History</h1>
-            <div class="user-info">Report Period: <b><?php echo $start_date; ?></b> to <b><?php echo $end_date; ?></b></div>
+            <div class="user-info">Period: <b><?php echo $start_date; ?></b> to <b><?php echo $end_date; ?></b></div>
         </div>
 
         <div class="card" style="margin-bottom: 25px;">
             <form method="GET" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 200px;">
+                <div style="flex: 1; min-width: 150px;">
                     <label>From Date</label>
-                    <input type="date" name="start_date" value="<?php echo $start_date; ?>" style="margin-bottom:0; width: 100%;">
+                    <input type="date" name="start_date" value="<?php echo $start_date; ?>" style="width:100%">
                 </div>
-                <div style="flex: 1; min-width: 200px;">
+                <div style="flex: 1; min-width: 150px;">
                     <label>To Date</label>
-                    <input type="date" name="end_date" value="<?php echo $end_date; ?>" style="margin-bottom:0; width: 100%;">
+                    <input type="date" name="end_date" value="<?php echo $end_date; ?>" style="width:100%">
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button type="submit" class="btn btn-primary" style="height: 45px; padding: 0 25px;">
-                        <i class="fas fa-filter"></i> Filter
-                    </button>
-                    <a href="history.php" class="btn btn-danger" style="height: 45px; text-decoration:none; display: flex; align-items: center; justify-content: center; padding: 0 20px;">
-                        Reset
-                    </a>
-                </div>
+                <button type="submit" class="btn btn-primary" style="height:40px;">Filter</button>
+                <a href="history.php" class="btn btn-danger" style="height:40px; text-decoration:none; display:flex; align-items:center;">Reset</a>
             </form>
         </div>
 
@@ -79,64 +86,45 @@ $history = $conn->query($history_query);
                 <h2><?php echo $total_orders; ?></h2>
             </div>
             <div class="stat-card" style="border-left-color: #f59e0b;">
-                <small>AVG. TICKET SIZE</small>
-                <h2>$<?php echo ($total_orders > 0) ? number_format($total_revenue / $total_orders, 2) : '0.00'; ?></h2>
+                <small>MOST ORDERED FOOD</small>
+                <h2 style="font-size: 1.2rem;"><?php echo htmlspecialchars($popular_item); ?></h2>
+                <small style="color: #64748b;"><?php echo $popular_qty; ?> sold</small>
             </div>
         </div>
 
         <div class="card">
-            <h3><i class="fas fa-list"></i> Transaction Logs</h3>
+            <h3>Transaction Logs</h3>
             <div class="table-container">
-                <table style="width: 100%; border-collapse: collapse;">
+                <table style="width: 100%;">
                     <thead>
-                        <tr style="background: #f8fafc;">
-                            <th style="padding: 15px; text-align: left;">Date/Time</th>
-                            <th style="padding: 15px; text-align: left;">Order ID</th>
-                            <th style="padding: 15px; text-align: left;">Table</th>
-                            <th style="padding: 15px; text-align: left;">Items Consumed</th>
-                            <th style="padding: 15px; text-align: left;">Total</th>
-                            <th style="padding: 15px; text-align: left;">Status</th>
+                        <tr style="background: #f8fafc; text-align: left;">
+                            <th style="padding: 15px;">Date/Time</th>
+                            <th style="padding: 15px;">Order ID</th>
+                            <th style="padding: 15px;">Table</th>
+                            <th style="padding: 15px;">Paid / Change</th>
+                            <th style="padding: 15px;">Total</th>
+                            <th style="padding: 15px;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if($history && $history->num_rows > 0): ?>
-                            <?php while($row = $history->fetch_assoc()): ?>
-                            <tr style="border-bottom: 1px solid #e2e8f0;">
-                                <td style="padding: 15px;">
-                                    <strong><?php echo date('M d, Y', strtotime($row['created_at'])); ?></strong><br>
-                                    <small style="color: #64748b;"><?php echo date('h:i A', strtotime($row['created_at'])); ?></small>
-                                </td>
-                                <td style="padding: 15px;">#<?php echo $row['id']; ?></td>
-                                <td style="padding: 15px;"><b><?php echo htmlspecialchars($row['table_number']); ?></b></td>
-                                <td style="padding: 15px;">
-                                    <?php
-                                    $order_id = $row['id'];
-                                    $items_query = "SELECT oi.quantity, i.name 
-                                                   FROM order_items oi 
-                                                   JOIN items i ON oi.item_id = i.id 
-                                                   WHERE oi.order_id = $order_id";
-                                    $items_result = $conn->query($items_query);
-                                    while($item = $items_result->fetch_assoc()) {
-                                        echo "<div style='font-size: 0.85rem;'>{$item['quantity']}x " . htmlspecialchars($item['name']) . "</div>";
-                                    }
-                                    ?>
-                                </td>
-                                <td style="padding: 15px;"><b style="color: #10b981;">$<?php echo number_format($row['total_price'], 2); ?></b></td>
-                                <td style="padding: 15px;">
-                                    <span style="background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold;">
-                                        PAID
-                                    </span>
-                                </td>
-                            </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="6" style="text-align: center; padding: 50px; color: #94a3b8;">
-                                    <i class="fas fa-folder-open" style="font-size: 2rem; display: block; margin-bottom: 10px;"></i>
-                                    No completed orders found for this date range.
-                                </td>
-                            </tr>
-                        <?php endif; ?>
+                        <?php while($row = $history->fetch_assoc()): ?>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 15px;">
+                                <strong><?php echo date('M d, Y', strtotime($row['created_at'])); ?></strong><br>
+                                <small><?php echo date('h:i A', strtotime($row['created_at'])); ?></small>
+                            </td>
+                            <td style="padding: 15px;">#<?php echo $row['id']; ?></td>
+                            <td style="padding: 15px;">Table <?php echo htmlspecialchars($row['table_number']); ?></td>
+                            <td style="padding: 15px;">
+                                <div style="font-size: 0.8rem;">Paid: $<?php echo number_format($row['amount_paid'], 2); ?></div>
+                                <div style="font-size: 0.8rem; color: #64748b;">Change: $<?php echo number_format($row['amount_paid'] - $row['total_price'], 2); ?></div>
+                            </td>
+                            <td style="padding: 15px;"><b>$<?php echo number_format($row['total_price'], 2); ?></b></td>
+                            <td style="padding: 15px;">
+                                <a href="receipt.php?id=<?php echo $row['id']; ?>" target="_blank" class="btn btn-primary" style="padding:5px 10px; font-size: 0.8rem;">Receipt</a>
+                            </td>
+                        </tr>
+                        <?php endwhile; ?>
                     </tbody>
                 </table>
             </div>

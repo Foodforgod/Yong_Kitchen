@@ -159,7 +159,8 @@ input:focus { outline: none; border-color: var(--primary); }
 
 .btn {
     border: none;
-    padding: 12px 20px;
+    height: 44px;
+    padding: 0 20px; 
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
@@ -168,6 +169,7 @@ input:focus { outline: none; border-color: var(--primary); }
     justify-content: center;
     gap: 8px;
     text-decoration: none;
+    font-size: 0.95rem; 
 }
 
 .btn-primary { background: var(--primary); color: white; }
@@ -458,4 +460,33 @@ label {
     text-decoration: none;
     font-weight: bold;
     font-size: 0.9rem;
+}
+.item-completed {
+    background-color: #f1f5f9 !important;
+    text-decoration: line-through;
+    color: #94a3b8;
+}
+
+.note-box {
+    font-size: 0.85rem; 
+    color: #fbbf24; 
+    background: rgba(251, 191, 36, 0.1); 
+    padding: 5px 8px; 
+    border-radius: 4px; 
+    border-left: 3px solid #fbbf24; 
+    margin-top: 4px; 
+    width: 100%;
+}
+
+.kitchen-item:hover {
+    background-color: #f8fafc;
+}
+
+.btn:disabled, .btn-ready:disabled {
+    background-color: #cbd5e1 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
+    box-shadow: none !important;
+    transform: none !important;
 }

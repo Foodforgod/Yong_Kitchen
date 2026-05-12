@@ -6,7 +6,6 @@ if (isset($_GET['remove'])) {
     $remove_key = $_GET['remove'];
     if (isset($_SESSION['customer_cart'][$remove_key])) {
         unset($_SESSION['customer_cart'][$remove_key]);
-       
         $_SESSION['customer_cart'] = array_values($_SESSION['customer_cart']);
     }
     header("Location: cart_view.php");
@@ -30,11 +29,9 @@ if (isset($_POST['confirm_order'])) {
     if ($conn->query($sql_order)) {
         $order_id = $conn->insert_id;
 
-    
         foreach ($_SESSION['customer_cart'] as $item) {
             $item_id = $item['id'];
             $qty = $item['qty'];
-            
             $remarks = $conn->real_escape_string($item['remarks']); 
            
             $sql_items = "INSERT INTO order_items (order_id, item_id, quantity, remarks) 
@@ -46,7 +43,7 @@ if (isset($_POST['confirm_order'])) {
 
         unset($_SESSION['customer_cart']);
         echo "<script>
-                alert('Order Sent! Your Order ID is #$order_id. Please wait while we prepare your food.');
+                alert('Order Sent! Your Order ID is #$order_id.');
                 window.location.href = 'order_index.php';
               </script>";
     } else {
@@ -75,7 +72,7 @@ if (isset($_POST['confirm_order'])) {
 
     <?php if(!empty($_SESSION['customer_cart'])): ?>
         
-        <div class="card" style="padding:0; overflow:hidden; border-radius: 15px;">
+        <div class="card" style="padding:0; overflow:hidden; border-radius: 15px; border: 1px solid var(--border);">
             <?php 
             $grand_total = 0;
             foreach($_SESSION['customer_cart'] as $key => $item): 
@@ -108,40 +105,36 @@ if (isset($_POST['confirm_order'])) {
             <?php endforeach; ?>
 
             <div style="padding:25px; background:#f8fafc; display:flex; justify-content:space-between; align-items:center; border-top: 2px solid #e2e8f0;">
-                <span style="font-size:1.2rem; font-weight:bold; color: var(--text-main);">Total Amount</span>
+                <span style="font-size:1.2rem; font-weight:bold;">Total</span>
                 <span style="font-size:1.8rem; font-weight:800; color:var(--primary);">$<?php echo number_format($grand_total, 2); ?></span>
             </div>
         </div>
 
-        <div class="card" style="margin-top: 25px; border-radius: 15px;">
+        <div class="card" style="margin-top: 25px; border-radius: 15px; padding: 20px;">
             <h3 style="margin-top: 0;"><i class="fas fa-chair"></i> Final Details</h3>
             <form method="POST">
                 <div style="margin-bottom: 20px;">
                     <label style="display:block; margin-bottom: 8px; font-weight: 600;">Which table are you at?</label>
-                    <select name="table_no" required style="font-size:1.1rem; padding:15px; background: #fff; border: 2px solid var(--border);">
+                    <select name="table_no" required style="width:100%; height:50px; font-size:1rem; padding:0 15px; border-radius:8px; border: 1px solid var(--border);">
                         <option value="" disabled selected>-- Select Your Table --</option>
-                        <?php 
-                        
-                        for($i=1; $i<=15; $i++): ?>
+                        <?php for($i=1; $i<=15; $i++): ?>
                             <option value="Table <?php echo $i; ?>">Table <?php echo $i; ?></option>
                         <?php endfor; ?>
                     </select>
                 </div>
                 
-                <button type="submit" name="confirm_order" class="btn btn-primary" style="width:100%; padding:20px; font-size:1.2rem; border-radius:12px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);">
+                <button type="submit" name="confirm_order" class="btn btn-primary" style="width:100%; height: 55px; font-size: 1.1rem; border-radius: 12px;">
                     <i class="fas fa-paper-plane"></i> CONFIRM & SEND ORDER
                 </button>
             </form>
         </div>
 
     <?php else: ?>
-        <div class="card" style="text-align:center; padding:60px; border-radius: 15px;">
-            <i class="fas fa-shopping-basket" style="font-size:4rem; color:#cbd5e1; margin-bottom:20px;"></i>
+        <div class="card" style="text-align:center; padding:50px; border-radius: 15px;">
+            <i class="fas fa-shopping-basket" style="font-size:4rem; color:#cbd5e1; margin-bottom:20px; display:block;"></i>
             <h2 style="color: #64748b;">Your cart is empty</h2>
-            <p style="color: #94a3b8; margin-bottom: 30px;">Looks like you haven't added any food yet.</p>
-            <a href="order_index.php" class="btn btn-primary" style="padding: 15px 40px; text-decoration: none;">
-                Browse Our Menu
-            </a>
+            <p style="color: #94a3b8; margin-bottom: 30px;">Add some delicious food to your cart first!</p>
+            <a href="order_index.php" class="btn btn-primary">Browse Menu</a>
         </div>
     <?php endif; ?>
 </div>
