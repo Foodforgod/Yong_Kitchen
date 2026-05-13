@@ -84,10 +84,7 @@ if (isset($_POST['login'])) {
         </form>
 
         
-        <div class="footer-link">
-            Don't have an account? <br>
-            <a href="admin_register.php">Create Admin Account</a>
-        </div>
+       
     </div>
 
 </body>
