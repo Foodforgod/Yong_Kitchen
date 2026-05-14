@@ -34,6 +34,13 @@ $history_query = "SELECT * FROM orders
                   AND DATE(created_at) BETWEEN '$start_date' AND '$end_date' 
                   ORDER BY created_at DESC";
 $history = $conn->query($history_query);
+
+function renderTableNumber($table_number) {
+    if (preg_match('/^\s*Table\s+/i', $table_number)) {
+        return htmlspecialchars($table_number);
+    }
+    return 'Table ' . htmlspecialchars($table_number);
+}
 ?>
 
 <!DOCTYPE html>
@@ -43,6 +50,50 @@ $history = $conn->query($history_query);
     <title>Sales History | RMS</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+        .history-table th,
+        .history-table td {
+            padding: 16px 18px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        .history-table thead th {
+            background: #f8fafc;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.82rem;
+            letter-spacing: 0.03em;
+        }
+        .history-table tbody tr:hover {
+            background: #f8fafc;
+        }
+        .receipt-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+            text-decoration: none;
+            transition: background 0.2s ease;
+        }
+        .receipt-link:hover { background: rgba(59, 130, 246, 0.2); }
+        .table-chip {
+            display: inline-flex;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.12);
+            color: #334155;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+    </style>
 </head>
 <body>
 
@@ -95,33 +146,35 @@ $history = $conn->query($history_query);
         <div class="card">
             <h3>Transaction Logs</h3>
             <div class="table-container">
-                <table style="width: 100%;">
+                <table class="history-table">
                     <thead>
-                        <tr style="background: #f8fafc; text-align: left;">
-                            <th style="padding: 15px;">Date/Time</th>
-                            <th style="padding: 15px;">Order ID</th>
-                            <th style="padding: 15px;">Table</th>
-                            <th style="padding: 15px;">Paid / Change</th>
-                            <th style="padding: 15px;">Total</th>
-                            <th style="padding: 15px;">Action</th>
+                        <tr>
+                            <th>Date / Time</th>
+                            <th>Order ID</th>
+                            <th>Table</th>
+                            <th>Paid / Change</th>
+                            <th>Total</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php while($row = $history->fetch_assoc()): ?>
-                        <tr style="border-bottom: 1px solid #e2e8f0;">
-                            <td style="padding: 15px;">
+                        <tr>
+                            <td>
                                 <strong><?php echo date('M d, Y', strtotime($row['created_at'])); ?></strong><br>
                                 <small><?php echo date('h:i A', strtotime($row['created_at'])); ?></small>
                             </td>
-                            <td style="padding: 15px;">#<?php echo $row['id']; ?></td>
-                            <td style="padding: 15px;">Table <?php echo htmlspecialchars($row['table_number']); ?></td>
-                            <td style="padding: 15px;">
-                                <div style="font-size: 0.8rem;">Paid: $<?php echo number_format($row['amount_paid'], 2); ?></div>
-                                <div style="font-size: 0.8rem; color: #64748b;">Change: $<?php echo number_format($row['amount_paid'] - $row['total_price'], 2); ?></div>
+                            <td>#<?php echo $row['id']; ?></td>
+                            <td><span class="table-chip"><?php echo renderTableNumber($row['table_number']); ?></span></td>
+                            <td>
+                                <div>Paid: $<?php echo number_format($row['amount_paid'], 2); ?></div>
+                                <div style="color: #64748b;">Change: $<?php echo number_format($row['amount_paid'] - $row['total_price'], 2); ?></div>
                             </td>
-                            <td style="padding: 15px;"><b>$<?php echo number_format($row['total_price'], 2); ?></b></td>
-                            <td style="padding: 15px;">
-                                <a href="receipt.php?id=<?php echo $row['id']; ?>" target="_blank" class="btn btn-primary" style="padding:5px 10px; font-size: 0.8rem;">Receipt</a>
+                            <td><strong style="color: var(--primary);">$<?php echo number_format($row['total_price'], 2); ?></strong></td>
+                            <td>
+                                <a href="receipt.php?id=<?php echo $row['id']; ?>" target="_blank" class="receipt-link">
+                                    <i class="fas fa-receipt"></i> Receipt
+                                </a>
                             </td>
                         </tr>
                         <?php endwhile; ?>

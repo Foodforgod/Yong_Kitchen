@@ -10,6 +10,13 @@ $items = $conn->query("SELECT oi.quantity, i.price, i.name
                        FROM order_items oi 
                        JOIN items i ON oi.item_id = i.id 
                        WHERE oi.order_id = $order_id");
+
+function renderTableNumber($table_number) {
+    if (preg_match('/^\s*Table\s+/i', $table_number)) {
+        return htmlspecialchars($table_number);
+    }
+    return 'Table ' . htmlspecialchars($table_number);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -41,7 +48,7 @@ $items = $conn->query("SELECT oi.quantity, i.price, i.name
         <div class="divider"></div>
         <p style="font-size:14px;">
             <b>ID:</b> #<?php echo $order['id']; ?><br>
-            <b>Table:</b> <?php echo htmlspecialchars($order['table_number']); ?><br>
+            <b>Table:</b> <?php echo renderTableNumber($order['table_number']); ?><br>
             <b>Date:</b> <?php echo date('d-m-Y H:i', strtotime($order['created_at'])); ?>
         </p>
         <div class="divider"></div>
