@@ -64,7 +64,7 @@ if (isset($_POST['confirm_order'])) {
 <body class="customer-body" style="background:#f1f5f9;">
 
 <div style="max-width: 600px; margin: 40px auto; padding: 0 20px;">
-    <a href="order_index.php" style="text-decoration:none; color:var(--text-muted); font-weight:bold; display: inline-block; margin-bottom: 20px;">
+    <a href="order_index.php" class="back-link">
         <i class="fas fa-chevron-left"></i> Back to Menu
     </a>
 
@@ -72,7 +72,7 @@ if (isset($_POST['confirm_order'])) {
 
     <?php if(!empty($_SESSION['customer_cart'])): ?>
         
-        <div class="card" style="padding:0; overflow:hidden; border-radius: 15px; border: 1px solid var(--border);">
+        <div class="card" style="padding:0; overflow:hidden;">
             <?php 
             $grand_total = 0;
             foreach($_SESSION['customer_cart'] as $key => $item): 
@@ -110,12 +110,12 @@ if (isset($_POST['confirm_order'])) {
             </div>
         </div>
 
-        <div class="card" style="margin-top: 25px; border-radius: 15px; padding: 20px;">
-            <h3 style="margin-top: 0;"><i class="fas fa-chair"></i> Final Details</h3>
+        <div class="card">
+            <h3><i class="fas fa-chair"></i> Final Details</h3>
             <form method="POST">
-                <div style="margin-bottom: 20px;">
-                    <label style="display:block; margin-bottom: 8px; font-weight: 600;">Which table are you at?</label>
-                    <select name="table_no" required style="width:100%; height:50px; font-size:1rem; padding:0 15px; border-radius:8px; border: 1px solid var(--border);">
+                <div class="form-group">
+                    <label>Which table are you at?</label>
+                    <select name="table_no" required>
                         <option value="" disabled selected>-- Select Your Table --</option>
                         <?php for($i=1; $i<=15; $i++): ?>
                             <option value="Table <?php echo $i; ?>">Table <?php echo $i; ?></option>
@@ -123,7 +123,7 @@ if (isset($_POST['confirm_order'])) {
                     </select>
                 </div>
                 
-                <button type="submit" name="confirm_order" class="btn btn-primary" style="width:100%; height: 55px; font-size: 1.1rem; border-radius: 12px;">
+                <button type="submit" name="confirm_order" class="btn btn-primary" style="width:100%; height: 48px; font-size: 1rem;">
                     <i class="fas fa-paper-plane"></i> CONFIRM & SEND ORDER
                 </button>
             </form>

@@ -113,17 +113,21 @@ function renderTableNumber($table_number) {
         </div>
 
         <div class="card" style="margin-bottom: 25px;">
-            <form method="GET" style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 150px;">
+            <form method="GET" class="form-grid" style="align-items: end;">
+                <div class="form-group">
                     <label>From Date</label>
-                    <input type="date" name="start_date" value="<?php echo $start_date; ?>" style="width:100%">
+                    <input type="date" name="start_date" value="<?php echo $start_date; ?>">
                 </div>
-                <div style="flex: 1; min-width: 150px;">
+                <div class="form-group">
                     <label>To Date</label>
-                    <input type="date" name="end_date" value="<?php echo $end_date; ?>" style="width:100%">
+                    <input type="date" name="end_date" value="<?php echo $end_date; ?>">
                 </div>
-                <button type="submit" class="btn btn-primary" style="height:40px;">Filter</button>
-                <a href="history.php" class="btn btn-danger" style="height:40px; text-decoration:none; display:flex; align-items:center;">Reset</a>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                </div>
+                <div class="form-group">
+                    <a href="history.php" class="btn btn-danger btn-sm" style="display:inline-flex; align-items:center; justify-content:center;">Reset</a>
+                </div>
             </form>
         </div>
 

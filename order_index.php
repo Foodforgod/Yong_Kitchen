@@ -164,18 +164,18 @@ if(isset($_SESSION['customer_cart'])) {
             <p>Select your favorite dishes and order directly.</p>
         </div>
 
-        <div class="search-container">
-            <form method="GET">
+        <div class="card">
+            <form method="GET" style="display: flex; gap: 10px;">
                 <input type="hidden" name="category" value="<?php echo $category_filter; ?>">
-                <div class="search-input-wrapper">
-                    <i class="fas fa-search"></i>
-                    <input type="text" name="search" value="<?php echo htmlspecialchars($search_term); ?>" placeholder="Search dishes...">
+                <div style="flex: 1; position: relative;">
+                    <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                    <input type="text" name="search" value="<?php echo htmlspecialchars($search_term); ?>" placeholder="Search dishes..." style="width: 100%; padding: 12px 12px 12px 45px; border: 1px solid #e2e8f0; border-radius: 10px;">
                 </div>
-                <button type="submit" class="btn btn-primary">Search</button>
+                <button type="submit" class="btn btn-primary btn-sm">Search</button>
             </form>
         </div>
 
-        <div class="category-wrapper">
+        <div style="margin: 25px 0;">
             <div class="category-bar">
                 <a href="order_index.php?search=<?php echo urlencode($search_term); ?>" 
                    class="cat-pill <?php echo (empty($category_filter)) ? 'active' : ''; ?>">All</a>

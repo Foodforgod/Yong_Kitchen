@@ -117,26 +117,29 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px;">
+        <div class="page-grid">
             <div class="card">
                 <h3><i class="fas fa-plus-circle"></i> Add New Product</h3>
                 <form method="POST">
-                    <label>Product Name</label>
-                    <input type="text" name="name" required placeholder="e.g. Classic Burger">
-                    
-                    <div style="display:flex; gap:10px;">
-                        <div style="flex:1">
+                    <div class="form-group">
+                        <label>Product Name</label>
+                        <input type="text" name="name" required placeholder="e.g. Classic Burger">
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
                             <label>Price ($)</label>
                             <input type="number" step="0.01" name="price" required>
                         </div>
-                        <div style="flex:1">
+                        <div class="form-group">
                             <label>Stock</label>
                             <input type="number" name="stock" value="50" required>
                         </div>
                     </div>
 
-                    <label>Category</label>
-                    <select name="category">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category">
                         <option>Main Course</option>
                         <option>Appetizer</option>
                         <option>Drinks</option>
@@ -149,7 +152,7 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
                     <label>Description</label>
                     <textarea name="description" rows="2"></textarea>
 
-                    <button type="submit" name="add_item" class="btn btn-primary" style="width:100%; height:45px; margin-top:10px;">
+                    <button type="submit" name="add_item" class="btn btn-primary btn-sm" style="width:100%; margin-top:10px;">
                         <i class="fas fa-save"></i> Save to Menu
                     </button>
                 </form>
@@ -182,12 +185,14 @@ $items = $conn->query("SELECT * FROM items ORDER BY id DESC");
                                     <td>$<?php echo number_format($row['price'], 2); ?></td>
                                     <td><?php echo $row['stock']; ?></td>
                                     <td>
-                                        <button class="btn btn-primary" onclick='openEditModal(<?php echo json_encode($row); ?>)' style="padding: 5px 10px;">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <a href="?delete=<?php echo $row['id']; ?>" class="btn btn-danger" onclick="return confirm('Delete this item?')" style="padding: 5px 10px;">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                        <div class="table-actions">
+                                            <button type="button" class="btn btn-primary btn-sm" onclick='openEditModal(<?php echo json_encode($row); ?>)'>
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            <a href="?delete=<?php echo $row['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Delete this item?')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endwhile; ?>

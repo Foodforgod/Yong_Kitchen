@@ -15,7 +15,8 @@ function renderTableNumber($table_number) {
 <head>
     <meta charset="UTF-8">
     <title>Kitchen Display | RMS</title>
-    <meta http-equiv="refresh" content="30"> <link rel="stylesheet" href="css/style.css">
+    <meta http-equiv="refresh" content="120">
+    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .order-card {
@@ -151,8 +152,7 @@ function renderTableNumber($table_number) {
                     foreach($items_list as $i):
                         $is_done = ($i['item_status'] == 'done');
                     ?>
-                        <div class="item-row <?php echo $is_done ? 'done' : ''; ?>" 
-                             data-order-id="<?php echo $o['id']; ?>"
+                        <div class="item-row <?php echo $is_done ? 'done' : ''; ?>"                              data-item-id="<?php echo $i['id']; ?>"                             data-order-id="<?php echo $o['id']; ?>"
                              onclick="toggleItem(<?php echo $i['id']; ?>, this)">
                             
                             <div class="item-text">
@@ -167,6 +167,14 @@ function renderTableNumber($table_number) {
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
+                </div>
+
+                <div class="order-footer">
+                    <div class="order-summary">
+                        <span><strong><?php echo $total_items; ?></strong> item<?php echo $total_items !== 1 ? 's' : ''; ?></span>
+                        <span><strong><?php echo $completed_count; ?></strong> ready</span>
+                        <span><?php echo ($total_items - $completed_count); ?> remaining</span>
+                    </div>
                 </div>
 
                 <div style="padding: 15px;">
@@ -191,6 +199,150 @@ function renderTableNumber($table_number) {
     </div>
 
     <script>
+    let lastUpdateTime = 0;
+    let lastOrderIds = new Set();
+    
+    function renderTableNumber(tableNumber) {
+        if (tableNumber.match(/^\s*Table\s+/i)) {
+            return tableNumber;
+        }
+        return 'Table ' + tableNumber;
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type}`;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 300px;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+        `;
+        toast.innerHTML = `<i class="fas fa-bell"></i> ${message}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function updateOrderSummary(orderId, totalItems, completedCount) {
+        const card = document.getElementById('order-card-' + orderId);
+        if (!card) return;
+        
+        const summary = card.querySelector('.order-summary');
+        if (summary) {
+            summary.innerHTML = `
+                <span><strong>${totalItems}</strong> item${totalItems !== 1 ? 's' : ''}</span>
+                <span><strong>${completedCount}</strong> ready</span>
+                <span>${totalItems - completedCount} remaining</span>
+            `;
+        }
+        
+        const readyBtn = document.getElementById('ready-btn-' + orderId);
+        if (readyBtn) {
+            readyBtn.disabled = completedCount < totalItems;
+        }
+    }
+
+    function updateItemRow(orderId, itemId, itemName, quantity, remarks, isDone) {
+        const card = document.getElementById('order-card-' + orderId);
+        if (!card) return;
+        
+        let itemRow = document.querySelector(`[data-item-id="${itemId}"]`);
+        
+        if (!itemRow) {
+           
+            const itemsList = card.querySelector('.order-items-list');
+            const newRow = document.createElement('div');
+            newRow.className = `item-row ${isDone ? 'done' : ''}`;
+            newRow.setAttribute('data-item-id', itemId);
+            newRow.setAttribute('data-order-id', orderId);
+            newRow.onclick = function() { toggleItem(itemId, this); };
+            
+            const statusIcon = isDone ? 'fas fa-check-circle' : 'far fa-circle';
+            let html = `
+                <div class="item-text">
+                    <i class="${statusIcon} status-icon"></i>
+                    <b>${quantity}x</b> ${itemName}
+                </div>
+            `;
+            
+            if (remarks) {
+                html += `<div class="note-box"><i class="fas fa-sticky-note"></i> ${remarks}</div>`;
+            }
+            
+            newRow.innerHTML = html;
+            itemsList.appendChild(newRow);
+        } else {
+            
+            const wasDone = itemRow.classList.contains('done');
+            if (isDone && !wasDone) {
+                itemRow.classList.add('done');
+                const icon = itemRow.querySelector('.status-icon');
+                icon.className = 'fas fa-check-circle status-icon';
+            } else if (!isDone && wasDone) {
+                itemRow.classList.remove('done');
+                const icon = itemRow.querySelector('.status-icon');
+                icon.className = 'far fa-circle status-icon';
+            }
+        }
+    }
+
+    function pollForUpdates() {
+        fetch('api/get_kitchen_orders.php')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) return;
+                
+                const currentOrderIds = new Set();
+                const ordersContainer = document.querySelector('.kitchen-grid');
+                
+                data.orders.forEach(order => {
+                    currentOrderIds.add(order.id);
+                    let card = document.getElementById('order-card-' + order.id);
+                    
+                    if (!lastOrderIds.has(order.id)) {
+                        showToast(`🔔 New Order: ${renderTableNumber(order.table_number)}`, 'warning');
+                    }
+                    
+                    order.items.forEach(item => {
+                        const isDone = item.item_status === 'done';
+                        updateItemRow(order.id, item.id, item.name, item.quantity, item.remarks, isDone);
+                    });
+                    
+                    updateOrderSummary(order.id, order.total_items, order.completed_count);
+                });
+                
+                document.querySelectorAll('[id^="order-card-"]').forEach(card => {
+                    const orderId = card.id.replace('order-card-', '');
+                    if (!currentOrderIds.has(parseInt(orderId))) {
+                        card.style.animation = 'slideOut 0.3s ease-out';
+                        setTimeout(() => card.remove(), 300);
+                    }
+                });
+                
+                if (data.orders.length === 0 && document.querySelectorAll('[id^="order-card-"]').length === 0) {
+                    const emptyState = document.querySelector('.empty-state');
+                    if (!emptyState) {
+                        ordersContainer.innerHTML = `
+                            <div class="empty-state" style="grid-column: 1/-1; text-align:center; padding-top:100px;">
+                                <i class="fas fa-clipboard-check" style="font-size: 4rem; color: #cbd5e1; margin-bottom: 20px;"></i>
+                                <h2 style="color: #64748b;">No active orders right now.</h2>
+                            </div>
+                        `;
+                    }
+                }
+                
+                lastUpdateTime = data.timestamp;
+                lastOrderIds = currentOrderIds;
+            })
+            .catch(err => console.error('Error fetching updates:', err));
+    }
+
     function toggleItem(itemId, element) {
         fetch('toggle_item_status.php?id=' + itemId)
         .then(response => response.json())
@@ -213,10 +365,39 @@ function renderTableNumber($table_number) {
                 } else {
                     readyBtn.disabled = true;
                 }
+                
+                showToast('✓ Item marked complete', 'success');
             }
         })
         .catch(err => console.error('Error toggling status:', err));
     }
+
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    setInterval(pollForUpdates, 5000);
     </script>
 </body>
 </html>

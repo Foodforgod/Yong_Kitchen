@@ -105,6 +105,7 @@ function renderTableNumber($table_number) {
 
         <div class="card">
             <h3>Active Bills</h3>
+            <?php if ($orders->num_rows > 0): ?>
             <div class="table-container">
                 <table class="cashier-table">
                     <thead>
@@ -160,6 +161,13 @@ function renderTableNumber($table_number) {
                     </tbody>
                 </table>
             </div>
+            <?php else: ?>
+                <div class="empty-state">
+                    <i class="fas fa-receipt" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 20px;"></i>
+                    <h2>No active bills at the moment</h2>
+                    <p>Waiting for kitchen orders to become ready.</p>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 
